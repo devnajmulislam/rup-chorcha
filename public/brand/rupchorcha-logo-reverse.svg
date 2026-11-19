@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" role="img" aria-labelledby="rupchorcha-logo-reverse-title">
+  <title id="rupchorcha-logo-reverse-title">RupChorcha</title>
+  <g transform="translate(0 8)">
+    <g stroke="#FFF9F7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M28 10C23 10 20 13 19 17C18 20 16 22 16 24C16 26 18 27 20 27C21 27 21 28 20 29C19 30 19 31 21 31C22 31 22 32 22 33C22 35 20 36 20 39C20 43 23 45 28 45V52" />
+      <path d="M28 10C39 8 47 14 47 24C47 32 41 36 32 36M38 36C43 42 47 47 53 51" />
+    </g>
+    <circle cx="55" cy="10" r="1.8" fill="#E50057" />
+  </g>
+  <text x="78" y="49" fill="#FFF9F7" font-family="'Cormorant Garamond', 'Times New Roman', serif" font-size="34" font-weight="600" letter-spacing="0.2">RupChorcha</text>
+</svg>
