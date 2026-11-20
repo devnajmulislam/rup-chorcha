@@ -23,11 +23,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
 import { authClient } from "@/lib/auth-client"
+import { dashboardPathForRole } from "@/lib/roles"
 import { cn } from "cn"
 
 const MIN_PASSWORD_LENGTH = 6
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const POST_SIGN_UP_REDIRECT = "/dashboard/customer"
+const POST_SIGN_UP_REDIRECT = dashboardPathForRole("customer")
 
 type FormValues = {
   name: string

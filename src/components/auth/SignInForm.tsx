@@ -89,7 +89,7 @@ function authErrorMessage(error: {
   return error.message?.trim() || "We could not sign you in."
 }
 
-function SignInForm() {
+function SignInForm({ blocked = false }: { blocked?: boolean }) {
   const router = useRouter()
   const [values, setValues] = React.useState<FormValues>(emptyValues)
   const [errors, setErrors] = React.useState<FormErrors>({})
@@ -202,6 +202,7 @@ function SignInForm() {
   }
 
   const busy = submitting || googleLoading
+  const showBlockedBanner = blocked && !errors.form
 
   return (
     <div className="flex flex-col gap-6">
@@ -213,6 +214,19 @@ function SignInForm() {
           Follow your appointments, confirmations, and payments in one place.
         </p>
       </div>
+
+      {showBlockedBanner ? (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-xl bg-destructive/10 px-3.5 py-3 text-sm text-destructive"
+        >
+          <CircleAlertIcon
+            className="mt-0.5 size-4 shrink-0"
+            aria-hidden="true"
+          />
+          This account is blocked. Contact RupChorcha to restore access.
+        </p>
+      ) : null}
 
       <Button
         type="button"

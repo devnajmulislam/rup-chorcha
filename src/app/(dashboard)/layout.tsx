@@ -1,9 +1,7 @@
-const DashboardLayout = () => {
-    return (
-        <div>
-            
-        </div>
-    );
-};
+import type { ReactNode } from "react"
 
-export default DashboardLayout;
+function DashboardLayout({ children }: { children: ReactNode }) {
+  return children
+}
+
+export default DashboardLayout

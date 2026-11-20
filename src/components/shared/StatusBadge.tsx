@@ -6,6 +6,7 @@ import {
   Clock3,
   Power,
   PowerOff,
+  ShieldBan,
   type LucideIcon,
 } from "lucide-react"
 
@@ -15,6 +16,7 @@ import { cn } from "cn"
 type StatusValue =
   | "active"
   | "inactive"
+  | "blocked"
   | "pending"
   | "confirmed"
   | "cancelled"
@@ -43,6 +45,11 @@ const statusConfig: Record<StatusValue, StatusConfig> = {
     label: "Inactive",
     icon: PowerOff,
     className: "border-border bg-muted text-muted-foreground",
+  },
+  blocked: {
+    label: "Blocked",
+    icon: ShieldBan,
+    className: "border-destructive/20 bg-destructive/10 text-destructive",
   },
   pending: {
     label: "Pending",

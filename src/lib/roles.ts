@@ -17,8 +17,17 @@ function roleOf(user: unknown): UserRole {
   return "customer"
 }
 
-function dashboardPathForRole(role: UserRole) {
-  return role === "admin" ? "/dashboard/admin" : "/dashboard/customer"
+function isUserBlocked(user: unknown): boolean {
+  return Boolean(
+    user &&
+    typeof user === "object" &&
+    "isBlocked" in user &&
+    (user as { isBlocked?: unknown }).isBlocked === true
+  )
 }
 
-export { dashboardPathForRole, normalizeRole, roleOf }
+function dashboardPathForRole(role: UserRole) {
+  return role === "admin" ? "/admin" : "/customer"
+}
+
+export { dashboardPathForRole, isUserBlocked, normalizeRole, roleOf }

@@ -1,13 +1,22 @@
 import Image from "next/image"
-import { Clock3 } from "lucide-react"
+import { Clock3, ImageIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDuration } from "@/lib/format"
-import type { DemoService } from "@/lib/demo-services"
 import { cn } from "cn"
 
+type ServiceCardData = {
+  id: string
+  serviceName: string
+  category: string
+  description: string
+  price: number
+  duration: number
+  image: string | null
+}
+
 type ServiceCardProps = {
-  service: DemoService
+  service: ServiceCardData
   className?: string
 }
 
@@ -20,13 +29,19 @@ function ServiceCard({ service, className }: ServiceCardProps) {
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-blush">
-        <Image
-          src={service.image}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          className="object-cover transition-transform duration-500 ease-out group-hover/service:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/service:scale-100"
-        />
+        {service.image ? (
+          <Image
+            src={service.image}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-500 ease-out group-hover/service:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/service:scale-100"
+          />
+        ) : (
+          <span className="flex size-full items-center justify-center text-plum/50">
+            <ImageIcon className="size-8" aria-hidden="true" />
+          </span>
+        )}
         <div className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-plum/45 to-transparent" />
         <Badge
           variant="secondary"
@@ -41,9 +56,11 @@ function ServiceCard({ service, className }: ServiceCardProps) {
           <h3 className="font-heading text-2xl leading-tight font-medium text-foreground">
             {service.serviceName}
           </h3>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {service.description}
-          </p>
+          {service.description ? (
+            <p className="text-sm leading-6 text-muted-foreground">
+              {service.description}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">
@@ -61,4 +78,4 @@ function ServiceCard({ service, className }: ServiceCardProps) {
 }
 
 export { ServiceCard }
-export type { ServiceCardProps }
+export type { ServiceCardData, ServiceCardProps }

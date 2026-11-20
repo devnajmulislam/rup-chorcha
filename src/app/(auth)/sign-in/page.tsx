@@ -10,7 +10,13 @@ export const metadata: Metadata = {
     "Sign in to your RupChorcha account with email and password or Google to manage your salon appointments.",
 }
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ blocked?: string }>
+}) {
+  const { blocked } = await searchParams
+
   return (
     <div className="flex min-h-full flex-col">
 
@@ -40,7 +46,7 @@ export default function SignInPage() {
           </div>
 
           <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
-            <SignInForm />
+            <SignInForm blocked={blocked === "1"} />
           </div>
         </Container>
       </main>
