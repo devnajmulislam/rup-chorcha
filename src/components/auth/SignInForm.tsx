@@ -145,7 +145,7 @@ function SignInForm() {
       const destination = dashboardPathForRole(roleOf(session?.user))
 
       toast.add({
-        title: "Signed in",
+        title: `You logged in successfully.`,
         description: "Welcome back to RupChorcha.",
         type: "success",
       })

@@ -15,7 +15,6 @@ export const metadata: Metadata = {
 export default function SignUpPage() {
   return (
     <div className="flex min-h-full flex-col">
-      <Navbar />
 
       <main className="flex-1 py-12 sm:py-16 lg:py-20">
         <Container className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:items-start lg:gap-16">
@@ -48,8 +47,6 @@ export default function SignUpPage() {
           </div>
         </Container>
       </main>
-
-      <Footer />
     </div>
   )
 }

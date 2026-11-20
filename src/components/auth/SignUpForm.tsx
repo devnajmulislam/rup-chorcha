@@ -186,8 +186,8 @@ function SignUpForm() {
       }
 
       toast.add({
-        title: "Account created",
-        description: "Welcome to RupChorcha. Taking you to your dashboard.",
+        title: `Hello, ${values.name}, Welcome to RupChorcha.`,
+        description:"Account created successfully",
         type: "success",
       })
 

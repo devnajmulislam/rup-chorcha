@@ -15,7 +15,6 @@ import {
 } from "lucide-react"
 
 import { Footer } from "@/components/shared/Footer"
-import Navbar from "@/components/shared/Navbar"
 import { Container } from "@/components/shared/Container"
 import { SectionHeading } from "@/components/shared/SectionHeading"
 import { ServiceCard } from "@/components/shared/ServiceCard"
@@ -89,7 +88,6 @@ const whyPoints: { title: string; description: string; icon: LucideIcon }[] = [
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
-      <Navbar />
 
       <main className="flex-1">
         <section id="top" className="relative scroll-mt-24 overflow-hidden">
@@ -330,7 +328,7 @@ export default function Home() {
         </section>
       </main>
 
-      <Footer />
+
     </div>
   )
 }

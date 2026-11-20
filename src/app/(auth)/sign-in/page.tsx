@@ -3,8 +3,6 @@ import Link from "next/link"
 
 import { SignInForm } from "@/components/auth/SignInForm"
 import { Container } from "@/components/shared/Container"
-import { Footer } from "@/components/shared/Footer"
-import Navbar from "@/components/shared/Navbar"
 
 export const metadata: Metadata = {
   title: "Sign In",
@@ -15,7 +13,6 @@ export const metadata: Metadata = {
 export default function SignInPage() {
   return (
     <div className="flex min-h-full flex-col">
-      <Navbar />
 
       <main className="flex-1 py-12 sm:py-16 lg:py-20">
         <Container className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:items-start lg:gap-16">
@@ -47,8 +44,6 @@ export default function SignInPage() {
           </div>
         </Container>
       </main>
-
-      <Footer />
     </div>
   )
 }

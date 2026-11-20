@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 
 import { Container } from "@/components/shared/Container"
 import { Footer } from "@/components/shared/Footer"
-import Navbar from "@/components/shared/Navbar"
 import { PageHeader } from "@/components/shared/PageHeader"
 
 export const metadata: Metadata = {
@@ -14,8 +13,6 @@ export const metadata: Metadata = {
 export default function ServicesPage() {
   return (
     <div className="flex min-h-full flex-col">
-      <Navbar />
-
       <main className="flex-1 py-14 sm:py-20">
         <Container className="flex flex-col gap-6">
           <PageHeader
