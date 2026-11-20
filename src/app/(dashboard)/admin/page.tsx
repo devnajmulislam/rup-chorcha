@@ -116,6 +116,18 @@ export default async function AdminDashboardPage() {
             Manage services
           </Link>
           <Link
+            href="/admin/services/new"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Add service
+          </Link>
+          <Link
+            href="/admin/services/update"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Update service
+          </Link>
+          <Link
             href="/admin/appointments"
             className="font-medium text-primary underline-offset-4 hover:underline"
           >

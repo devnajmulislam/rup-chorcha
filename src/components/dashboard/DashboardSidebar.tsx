@@ -5,10 +5,18 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   ArrowLeft,
+  CalendarDays,
+  CirclePlus,
+  LayoutDashboard,
   Loader2Icon,
   LogOut,
   Menu as MenuIcon,
+  ReceiptText,
+  Scissors,
+  SquarePen,
   UserRound,
+  Users,
+  type LucideIcon,
 } from "lucide-react"
 
 import { Logo } from "@/components/brand/Logo"
@@ -23,9 +31,28 @@ import {
 } from "@/components/ui/sheet"
 import { toast } from "@/components/ui/toast"
 import { authClient } from "@/lib/auth-client"
-import { findActiveHref, type DashboardNavItem } from "@/lib/dashboard-nav"
+import {
+  findActiveHref,
+  type DashboardNavIcon,
+  type DashboardNavItem,
+} from "@/lib/dashboard-nav"
 import type { UserRole } from "@/lib/roles"
 import { cn } from "cn"
+
+/**
+ * Nav items cross the Server -> Client boundary, so they carry a serializable
+ * icon key and the matching Lucide component is resolved here on the client.
+ */
+const NAV_ICONS: Record<DashboardNavIcon, LucideIcon> = {
+  overview: LayoutDashboard,
+  appointments: CalendarDays,
+  profile: UserRound,
+  services: Scissors,
+  "add-service": CirclePlus,
+  "update-service": SquarePen,
+  users: Users,
+  transactions: ReceiptText,
+}
 
 type DashboardUser = {
   name: string
@@ -104,7 +131,7 @@ function NavList({
     <nav aria-label="Dashboard navigation" className="flex flex-col gap-1">
       {nav.map((item) => {
         const active = item.href === activeHref
-        const Icon = item.icon
+        const Icon = NAV_ICONS[item.icon]
 
         return (
           <Link

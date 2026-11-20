@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ImageIcon,
@@ -17,7 +18,6 @@ import {
   deleteServiceAction,
   setServiceStatusAction,
 } from "@/app/(dashboard)/admin/services/actions"
-import { ServiceFormDialog } from "@/components/dashboard/ServiceFormDialog"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import {
@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Switch } from "@/components/ui/switch"
@@ -38,6 +38,7 @@ import { toast } from "@/components/ui/toast"
 import { SALON_CATEGORIES } from "@/lib/constants"
 import { formatCurrency, formatDuration } from "@/lib/format"
 import type { Service, ServiceStatus } from "@/lib/services"
+import { cn } from "cn"
 
 type AdminServicesProps = {
   services: Service[]
@@ -45,11 +46,13 @@ type AdminServicesProps = {
 
 type StatusFilter = "all" | ServiceStatus
 
+const addServiceLinkClass = cn(
+  buttonVariants({ size: "lg" }),
+  "h-10 rounded-full px-5 text-sm"
+)
+
 function AdminServices({ services }: AdminServicesProps) {
   const router = useRouter()
-  const [formKey, setFormKey] = React.useState(0)
-  const [formOpen, setFormOpen] = React.useState(false)
-  const [editing, setEditing] = React.useState<Service | null>(null)
   const [busyId, setBusyId] = React.useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<Service | null>(null)
   const [deleting, setDeleting] = React.useState(false)
@@ -86,18 +89,6 @@ function AdminServices({ services }: AdminServicesProps) {
     setSearch("")
     setCategoryFilter("all")
     setStatusFilter("all")
-  }
-
-  function openCreateForm() {
-    setEditing(null)
-    setFormKey((current) => current + 1)
-    setFormOpen(true)
-  }
-
-  function openEditForm(service: Service) {
-    setEditing(service)
-    setFormKey((current) => current + 1)
-    setFormOpen(true)
   }
 
   async function handleStatusChange(service: Service, nextActive: boolean) {
@@ -181,14 +172,10 @@ function AdminServices({ services }: AdminServicesProps) {
             : `${services.length} service${services.length === 1 ? "" : "s"}`}{" "}
           · only active services appear on the public menu.
         </p>
-        <Button
-          type="button"
-          onClick={openCreateForm}
-          className="h-10 rounded-full px-5 text-sm"
-        >
+        <Link href="/admin/services/new" className={addServiceLinkClass}>
           <Plus aria-hidden="true" />
           Add service
-        </Button>
+        </Link>
       </div>
 
       {services.length > 0 ? (
@@ -258,14 +245,10 @@ function AdminServices({ services }: AdminServicesProps) {
           title="No services yet"
           description="Add the first RupChorcha service and it will appear on the public menu for customers to browse."
         >
-          <Button
-            type="button"
-            onClick={openCreateForm}
-            className="h-10 rounded-full px-5 text-sm"
-          >
+          <Link href="/admin/services/new" className={addServiceLinkClass}>
             <Plus aria-hidden="true" />
             Add service
-          </Button>
+          </Link>
         </EmptyState>
       ) : filteredServices.length === 0 ? (
         <EmptyState
@@ -341,17 +324,18 @@ function AdminServices({ services }: AdminServicesProps) {
                     </span>
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full border-border bg-transparent"
-                    onClick={() => openEditForm(service)}
-                    disabled={busy}
+                  <Link
+                    href={`/admin/services/update/${service.id}`}
+                    aria-disabled={busy}
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "rounded-full border-border bg-transparent",
+                      busy && "pointer-events-none opacity-50"
+                    )}
                   >
                     <Pencil aria-hidden="true" />
                     Edit
-                  </Button>
+                  </Link>
 
                   <Button
                     type="button"
@@ -370,13 +354,6 @@ function AdminServices({ services }: AdminServicesProps) {
           })}
         </ul>
       )}
-
-      <ServiceFormDialog
-        key={formKey}
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        service={editing}
-      />
 
       <AlertDialog
         open={Boolean(deleteTarget)}

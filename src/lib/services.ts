@@ -97,6 +97,18 @@ async function getAllServices(): Promise<Service[]> {
   return rows.map(toService)
 }
 
+/** Admin lookup: returns the service whatever its status, or null. */
+async function getServiceById(serviceId: string): Promise<Service | null> {
+  if (!ObjectId.isValid(serviceId)) {
+    return null
+  }
+
+  const collection = await servicesCollection()
+  const row = await collection.findOne({ _id: new ObjectId(serviceId) })
+
+  return row ? toService(row) : null
+}
+
 async function createService(input: ServiceInput): Promise<string> {
   const collection = await servicesCollection()
   const now = new Date()
@@ -190,6 +202,7 @@ export {
   deleteService,
   getActiveServices,
   getAllServices,
+  getServiceById,
   isAllowedServiceImage,
   setServiceStatus,
   updateService,

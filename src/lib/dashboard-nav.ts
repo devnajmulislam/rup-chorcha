@@ -5,6 +5,8 @@ type DashboardNavIcon =
   | "appointments"
   | "profile"
   | "services"
+  | "add-service"
+  | "update-service"
   | "users"
   | "transactions"
 
@@ -23,6 +25,8 @@ const customerNav: DashboardNavItem[] = [
 const adminNav: DashboardNavItem[] = [
   { label: "Overview", href: "/admin", icon: "overview" },
   { label: "Manage Services", href: "/admin/services", icon: "services" },
+  { label: "Add Service", href: "/admin/services/new", icon: "add-service" },
+  { label: "Update Service", href: "/admin/services/update", icon: "update-service" },
   { label: "Manage Appointments", href: "/admin/appointments", icon: "appointments" },
   { label: "Manage Users", href: "/admin/users", icon: "users" },
   { label: "Transactions", href: "/admin/transactions", icon: "transactions" },

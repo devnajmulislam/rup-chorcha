@@ -126,6 +126,9 @@ function parseServiceValues(values: ServiceFormValues): ParsedService {
 function revalidateServicePaths() {
   revalidatePath("/admin")
   revalidatePath("/admin/services")
+  revalidatePath("/admin/services/new")
+  revalidatePath("/admin/services/update")
+  revalidatePath("/admin/services/update/[id]", "page")
   revalidatePath("/services")
   revalidatePath("/")
 }
