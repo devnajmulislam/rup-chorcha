@@ -30,7 +30,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { toast } from "@/components/ui/toast"
-import { authClient } from "@/lib/auth-client"
+import { logoutSession, useAuthSession } from "@/lib/auth-client"
 import {
   findActiveHref,
   type DashboardNavIcon,
@@ -203,6 +203,7 @@ function SidebarSignOut({
   onSignOutComplete?: () => void
 }) {
   const router = useRouter()
+  const { setUser } = useAuthSession()
   const [signingOut, setSigningOut] = React.useState(false)
 
   async function handleSignOut() {
@@ -213,19 +214,18 @@ function SidebarSignOut({
     setSigningOut(true)
 
     try {
-      const { error } = await authClient.signOut()
+      const result = await logoutSession()
 
-      if (error) {
+      if (!result.ok) {
         toast.add({
           title: "Sign out failed",
-          description:
-            error.message?.trim() ||
-            "We could not sign you out. Please try again.",
+          description: result.message,
           type: "error",
         })
         return
       }
 
+      setUser(null)
       toast.add({
         title: "Signed out",
         description: "You have been signed out of RupChorcha.",
@@ -234,13 +234,6 @@ function SidebarSignOut({
       onSignOutComplete?.()
       router.refresh()
       router.push("/")
-    } catch {
-      toast.add({
-        title: "Sign out failed",
-        description:
-          "We could not reach RupChorcha. Check your connection and try again.",
-        type: "error",
-      })
     } finally {
       setSigningOut(false)
     }

@@ -1,8 +1,8 @@
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 
-import { auth } from "@/lib/auth"
 import { isUserBlocked, roleOf } from "@/lib/roles"
+import { getServerSession } from "@/lib/session"
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -16,9 +16,26 @@ const MAX_IMAGE_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 export async function POST(request: Request) {
   const incomingHeaders = await headers()
-  const session = await auth.api.getSession({ headers: incomingHeaders })
+  const session = await getServerSession()
 
-  if (!session?.user) {
+  if (session.status === "unavailable") {
+    return NextResponse.json(
+      { success: false, message: session.message },
+      { status: 503 }
+    )
+  }
+
+  if (session.status === "blocked") {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "This account is blocked. Contact RupChorcha to restore access.",
+      },
+      { status: 403 }
+    )
+  }
+
+  if (session.status !== "authenticated") {
     return NextResponse.json(
       { success: false, message: "Sign in as an admin to upload images." },
       { status: 401 }

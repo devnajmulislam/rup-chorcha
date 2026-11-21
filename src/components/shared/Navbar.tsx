@@ -31,7 +31,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { toast } from "@/components/ui/toast"
-import { authClient } from "@/lib/auth-client"
+import { logoutSession, useAuthSession } from "@/lib/auth-client"
 import { dashboardPathForRole, roleOf } from "@/lib/roles"
 import { cn } from "cn"
 
@@ -91,10 +91,9 @@ function UserAvatar({
 function Navbar() {
   const pathname = usePathname() ?? "/"
   const router = useRouter()
-  const { data: session, isPending } = authClient.useSession()
+  const { user, isPending, setUser } = useAuthSession()
   const [signingOut, setSigningOut] = React.useState(false)
 
-  const user = session?.user ?? null
   const dashboardHref = user ? dashboardPathForRole(roleOf(user)) : null
   const name = user ? displayNameOf(user) : ""
 
@@ -106,19 +105,18 @@ function Navbar() {
     setSigningOut(true)
 
     try {
-      const { error } = await authClient.signOut()
+      const result = await logoutSession()
 
-      if (error) {
+      if (!result.ok) {
         toast.add({
           title: "Sign out failed",
-          description:
-            error.message?.trim() ||
-            "We could not sign you out. Please try again.",
+          description: result.message,
           type: "error",
         })
         return
       }
 
+      setUser(null)
       toast.add({
         title: "Signed out",
         description: "You have been signed out of RupChorcha.",
@@ -126,13 +124,6 @@ function Navbar() {
       })
       router.refresh()
       router.push("/")
-    } catch {
-      toast.add({
-        title: "Sign out failed",
-        description:
-          "We could not reach RupChorcha. Check your connection and try again.",
-        type: "error",
-      })
     } finally {
       setSigningOut(false)
     }

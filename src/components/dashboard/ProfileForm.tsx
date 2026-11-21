@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import { authClient } from "@/lib/auth-client"
+import { updateMyProfile, useAuthSession } from "@/lib/auth-client"
 
 type ProfileFormProps = {
   name: string
@@ -46,6 +46,7 @@ function isHttpUrl(value: string) {
 
 function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
   const router = useRouter()
+  const { setUser } = useAuthSession()
   const [values, setValues] = React.useState<FormValues>({
     name,
     phone,
@@ -117,39 +118,32 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
     setSaving(true)
 
     try {
-      const { error } = await authClient.updateUser({
+      const result = await updateMyProfile({
         name: values.name.trim(),
         phone: values.phone.trim(),
         image: values.image.trim() || null,
       })
 
-      if (error) {
-        const message =
-          error.message?.trim() || "We could not save your profile."
-        setErrors({ form: message })
+      if (!result.ok) {
+        setErrors({
+          ...(result.fieldErrors ?? {}),
+          form: result.message,
+        })
         toast.add({
           title: "Profile not saved",
-          description: message,
+          description: result.message,
           type: "error",
         })
         return
       }
 
+      setUser(result.user)
       toast.add({
         title: "Profile updated",
         description: "Your details have been saved.",
         type: "success",
       })
       router.refresh()
-    } catch {
-      const message =
-        "We could not reach RupChorcha. Check your connection and try again."
-      setErrors({ form: message })
-      toast.add({
-        title: "Profile not saved",
-        description: message,
-        type: "error",
-      })
     } finally {
       setSaving(false)
     }

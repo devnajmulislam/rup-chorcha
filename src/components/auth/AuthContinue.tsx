@@ -6,35 +6,56 @@ import { useRouter } from "next/navigation"
 import { CircleAlertIcon, Loader2Icon } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
-import { authClient } from "@/lib/auth-client"
-import { dashboardPathForRole, roleOf } from "@/lib/roles"
+import { useAuthSession } from "@/lib/auth-client"
+import { resolvePostAuthDestination, roleOf } from "@/lib/roles"
 import { cn } from "cn"
 
-function AuthContinue() {
+function AuthContinue({ redirectTo = "" }: { redirectTo?: string }) {
   const router = useRouter()
-  const [failed, setFailed] = React.useState(false)
+  const { refreshSession } = useAuthSession()
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     let active = true
 
     async function redirectByRole() {
       try {
-        const { data: session } = await authClient.getSession()
+        const result = await refreshSession()
 
         if (!active) {
           return
         }
 
-        if (!session?.user) {
-          setFailed(true)
+        if (result.blocked) {
+          router.replace("/sign-in?blocked=1")
           return
         }
 
-        router.replace(dashboardPathForRole(roleOf(session.user)))
+        if (result.backendUnavailable) {
+          setErrorMessage(
+            "Authentication service is temporarily unavailable. Please try again."
+          )
+          return
+        }
+
+        if (!result.user) {
+          setErrorMessage(
+            "We could not confirm your sign-in. Please sign in again."
+          )
+          return
+        }
+
+        const destination = resolvePostAuthDestination(
+          redirectTo,
+          roleOf(result.user)
+        )
+        router.replace(destination)
         router.refresh()
       } catch {
         if (active) {
-          setFailed(true)
+          setErrorMessage(
+            "We could not confirm your sign-in. Please sign in again."
+          )
         }
       }
     }
@@ -44,9 +65,9 @@ function AuthContinue() {
     return () => {
       active = false
     }
-  }, [router])
+  }, [redirectTo, refreshSession, router])
 
-  if (failed) {
+  if (errorMessage) {
     return (
       <div className="flex flex-col items-start gap-5">
         <p
@@ -57,7 +78,7 @@ function AuthContinue() {
             className="mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
-          We could not confirm your sign-in. Please sign in again.
+          {errorMessage}
         </p>
         <Link
           href="/sign-in"

@@ -22,13 +22,17 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import { authClient } from "@/lib/auth-client"
-import { dashboardPathForRole } from "@/lib/roles"
+import {
+  getAuthProviders,
+  registerWithEmail,
+  startGoogleAuth,
+  useAuthSession,
+} from "@/lib/auth-client"
+import { isSafeHttpUrl, passwordRules } from "@/lib/auth-validators"
+import { resolvePostAuthDestination, roleOf } from "@/lib/roles"
 import { cn } from "cn"
 
-const MIN_PASSWORD_LENGTH = 6
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const POST_SIGN_UP_REDIRECT = dashboardPathForRole("customer")
 
 type FormValues = {
   name: string
@@ -44,32 +48,6 @@ const emptyValues: FormValues = {
   email: "",
   password: "",
   imageUrl: "",
-}
-
-function passwordRules(password: string) {
-  return [
-    {
-      label: `At least ${MIN_PASSWORD_LENGTH} characters`,
-      met: password.length >= MIN_PASSWORD_LENGTH,
-    },
-    {
-      label: "One uppercase letter",
-      met: /[A-Z]/.test(password),
-    },
-    {
-      label: "One lowercase letter",
-      met: /[a-z]/.test(password),
-    },
-  ]
-}
-
-function isHttpUrl(value: string) {
-  try {
-    const url = new URL(value)
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
-  }
 }
 
 function validate(values: FormValues): FormErrors {
@@ -91,7 +69,7 @@ function validate(values: FormValues): FormErrors {
     errors.password = "Your password does not meet all the rules below."
   }
 
-  if (values.imageUrl.trim() && !isHttpUrl(values.imageUrl.trim())) {
+  if (values.imageUrl.trim() && !isSafeHttpUrl(values.imageUrl.trim())) {
     errors.imageUrl =
       "Enter a full image URL that starts with http:// or https://."
   }
@@ -99,37 +77,35 @@ function validate(values: FormValues): FormErrors {
   return errors
 }
 
-function authErrorMessage(error: {
-  message?: string
-  code?: string
-  status?: number
-}) {
-  if (error.code === "USER_ALREADY_EXISTS") {
-    return "An account with this email already exists. Try signing in instead."
-  }
-
-  if (error.status === 429) {
-    return "Too many attempts. Please wait a moment and try again."
-  }
-
-  if (error.status === 503 || error.status === 502) {
-    return "Registration is temporarily unavailable. Please try again shortly."
-  }
-
-  return error.message?.trim() || "We could not create your account."
-}
-
-function SignUpForm() {
+function SignUpForm({ redirectTo = "" }: { redirectTo?: string }) {
   const router = useRouter()
+  const { setUser } = useAuthSession()
   const [values, setValues] = React.useState<FormValues>(emptyValues)
   const [errors, setErrors] = React.useState<FormErrors>({})
   const [showPassword, setShowPassword] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [googleLoading, setGoogleLoading] = React.useState(false)
+  const [googleAvailable, setGoogleAvailable] = React.useState(true)
+
+  React.useEffect(() => {
+    let active = true
+
+    async function checkProviders() {
+      const providers = await getAuthProviders()
+      if (active && providers) {
+        setGoogleAvailable(providers.google)
+      }
+    }
+
+    void checkProviders()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const rules = passwordRules(values.password)
   const rulesSatisfied = rules.every((rule) => rule.met)
-  const imagePreview = isHttpUrl(values.imageUrl.trim())
+  const imagePreview = isSafeHttpUrl(values.imageUrl.trim())
     ? values.imageUrl.trim()
     : undefined
   const initials =
@@ -167,42 +143,52 @@ function SignUpForm() {
     setSubmitting(true)
 
     try {
-      const { error } = await authClient.signUp.email({
-        name: values.name.trim(),
+      const trimmedName = values.name.trim()
+      const result = await registerWithEmail({
+        name: trimmedName,
         email: values.email.trim().toLowerCase(),
         password: values.password,
         image: values.imageUrl.trim() || undefined,
-        callbackURL: POST_SIGN_UP_REDIRECT,
       })
 
-      if (error) {
-        const message = authErrorMessage(error)
-        setErrors({ form: message })
+      if (!result.ok) {
+        const mappedErrors: FormErrors = { form: result.message }
+        if (result.fieldErrors?.name) {
+          mappedErrors.name = result.fieldErrors.name
+        }
+        if (result.fieldErrors?.email) {
+          mappedErrors.email = result.fieldErrors.email
+        }
+        if (result.fieldErrors?.password) {
+          mappedErrors.password = result.fieldErrors.password
+        }
+        if (result.fieldErrors?.image) {
+          mappedErrors.imageUrl = result.fieldErrors.image
+        }
+
+        setErrors(mappedErrors)
         toast.add({
           title: "Registration failed",
-          description: message,
+          description: result.message,
           type: "error",
         })
         return
       }
 
+      setUser(result.user)
+      const destination = resolvePostAuthDestination(
+        redirectTo,
+        roleOf(result.user)
+      )
+
       toast.add({
-        title: `Hello, ${values.name}, Welcome to RupChorcha.`,
-        description:"Account created successfully",
+        title: `Hello, ${trimmedName}, Welcome to RupChorcha.`,
+        description: "Account created successfully",
         type: "success",
       })
 
       router.refresh()
-      router.push(POST_SIGN_UP_REDIRECT)
-    } catch {
-      const message =
-        "We could not reach RupChorcha. Check your connection and try again."
-      setErrors({ form: message })
-      toast.add({
-        title: "Registration failed",
-        description: message,
-        type: "error",
-      })
+      router.push(destination)
     } finally {
       setSubmitting(false)
     }
@@ -213,22 +199,20 @@ function SignUpForm() {
     setErrors((current) => ({ ...current, form: undefined }))
 
     try {
-      const { error } = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: POST_SIGN_UP_REDIRECT,
-      })
+      const result = await startGoogleAuth(redirectTo || undefined)
 
-      if (error) {
-        const message =
-          error.message?.trim() ||
-          "Google sign-up could not be started. Please try again."
-        setErrors({ form: message })
+      if (!result.ok) {
+        setErrors({ form: result.message })
         toast.add({
           title: "Google sign-up failed",
-          description: message,
+          description: result.message,
           type: "error",
         })
+        setGoogleLoading(false)
+        return
       }
+
+      window.location.assign(result.url)
     } catch {
       const message =
         "We could not reach Google sign-up. Check your connection and try again."
@@ -238,12 +222,14 @@ function SignUpForm() {
         description: message,
         type: "error",
       })
-    } finally {
       setGoogleLoading(false)
     }
   }
 
   const busy = submitting || googleLoading
+  const signInHref = redirectTo
+    ? `/sign-in?redirect=${encodeURIComponent(redirectTo)}`
+    : "/sign-in"
 
   return (
     <div className="flex flex-col gap-6">
@@ -262,14 +248,16 @@ function SignUpForm() {
         variant="outline"
         className="h-11 w-full rounded-full border-border bg-transparent text-sm hover:bg-blush hover:text-plum"
         onClick={handleGoogleSignUp}
-        disabled={busy}
+        disabled={busy || !googleAvailable}
       >
         {googleLoading ? (
           <Loader2Icon className="animate-spin" aria-hidden="true" />
         ) : (
           <GoogleIcon />
         )}
-        Continue with Google
+        {googleAvailable
+          ? "Continue with Google"
+          : "Google sign-up unavailable"}
       </Button>
 
       <div className="flex items-center gap-3 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
@@ -462,7 +450,7 @@ function SignUpForm() {
       <p className="text-sm leading-6 text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href="/sign-in"
+          href={signInHref}
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
           Sign in

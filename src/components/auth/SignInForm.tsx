@@ -19,11 +19,15 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import { authClient } from "@/lib/auth-client"
-import { dashboardPathForRole, roleOf } from "@/lib/roles"
+import {
+  getAuthProviders,
+  loginWithEmail,
+  startGoogleAuth,
+  useAuthSession,
+} from "@/lib/auth-client"
+import { resolvePostAuthDestination, roleOf } from "@/lib/roles"
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const CONTINUE_PATH = "/auth/continue"
 
 type FormValues = {
   email: string
@@ -53,49 +57,39 @@ function validate(values: FormValues): FormErrors {
   return errors
 }
 
-function authErrorMessage(error: {
-  message?: string
-  code?: string
-  status?: number
+function SignInForm({
+  blocked = false,
+  oauthError = null,
+  redirectTo = "",
+}: {
+  blocked?: boolean
+  oauthError?: string | null
+  redirectTo?: string
 }) {
-  if (
-    error.code === "INVALID_EMAIL_OR_PASSWORD" ||
-    error.code === "INVALID_PASSWORD" ||
-    error.status === 401
-  ) {
-    return "Email or password is incorrect. Please try again."
-  }
-
-  if (
-    error.code === "BANNED_USER" ||
-    error.code === "USER_BLOCKED" ||
-    error.status === 403
-  ) {
-    return "This account is blocked. Contact RupChorcha to restore access."
-  }
-
-  if (error.code === "EMAIL_NOT_VERIFIED") {
-    return "Verify your email address before signing in."
-  }
-
-  if (error.status === 429) {
-    return "Too many attempts. Please wait a moment and try again."
-  }
-
-  if (error.status === 503 || error.status === 502) {
-    return "Sign in is temporarily unavailable. Please try again shortly."
-  }
-
-  return error.message?.trim() || "We could not sign you in."
-}
-
-function SignInForm({ blocked = false }: { blocked?: boolean }) {
   const router = useRouter()
+  const { setUser } = useAuthSession()
   const [values, setValues] = React.useState<FormValues>(emptyValues)
   const [errors, setErrors] = React.useState<FormErrors>({})
   const [showPassword, setShowPassword] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [googleLoading, setGoogleLoading] = React.useState(false)
+  const [googleAvailable, setGoogleAvailable] = React.useState(true)
+
+  React.useEffect(() => {
+    let active = true
+
+    async function checkProviders() {
+      const providers = await getAuthProviders()
+      if (active && providers) {
+        setGoogleAvailable(providers.google)
+      }
+    }
+
+    void checkProviders()
+    return () => {
+      active = false
+    }
+  }, [])
 
   function updateValue(field: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -124,43 +118,39 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
     setSubmitting(true)
 
     try {
-      const { error } = await authClient.signIn.email({
+      const result = await loginWithEmail({
         email: values.email.trim().toLowerCase(),
         password: values.password,
         rememberMe: true,
       })
 
-      if (error) {
-        const message = authErrorMessage(error)
-        setErrors({ form: message })
+      if (!result.ok) {
+        setErrors({
+          ...(result.fieldErrors ?? {}),
+          form: result.message,
+        })
         toast.add({
           title: "Sign in failed",
-          description: message,
+          description: result.message,
           type: "error",
         })
         return
       }
 
-      const { data: session } = await authClient.getSession()
-      const destination = dashboardPathForRole(roleOf(session?.user))
+      setUser(result.user)
+      const destination = resolvePostAuthDestination(
+        redirectTo,
+        roleOf(result.user)
+      )
 
       toast.add({
-        title: `You logged in successfully.`,
+        title: "You logged in successfully.",
         description: "Welcome back to RupChorcha.",
         type: "success",
       })
 
       router.refresh()
       router.push(destination)
-    } catch {
-      const message =
-        "We could not reach RupChorcha. Check your connection and try again."
-      setErrors({ form: message })
-      toast.add({
-        title: "Sign in failed",
-        description: message,
-        type: "error",
-      })
     } finally {
       setSubmitting(false)
     }
@@ -171,22 +161,20 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
     setErrors((current) => ({ ...current, form: undefined }))
 
     try {
-      const { error } = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: `${window.location.origin}${CONTINUE_PATH}`,
-      })
+      const result = await startGoogleAuth(redirectTo || undefined)
 
-      if (error) {
-        const message =
-          error.message?.trim() ||
-          "Google sign-in could not be started. Please try again."
-        setErrors({ form: message })
+      if (!result.ok) {
+        setErrors({ form: result.message })
         toast.add({
           title: "Google sign-in failed",
-          description: message,
+          description: result.message,
           type: "error",
         })
+        setGoogleLoading(false)
+        return
       }
+
+      window.location.assign(result.url)
     } catch {
       const message =
         "We could not reach Google sign-in. Check your connection and try again."
@@ -196,13 +184,20 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
         description: message,
         type: "error",
       })
-    } finally {
       setGoogleLoading(false)
     }
   }
 
   const busy = submitting || googleLoading
-  const showBlockedBanner = blocked && !errors.form
+  const bannerMessage =
+    !errors.form && blocked
+      ? "This account is blocked. Contact RupChorcha to restore access."
+      : !errors.form && oauthError
+        ? oauthError
+        : null
+  const signUpHref = redirectTo
+    ? `/sign-up?redirect=${encodeURIComponent(redirectTo)}`
+    : "/sign-up"
 
   return (
     <div className="flex flex-col gap-6">
@@ -215,7 +210,7 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
         </p>
       </div>
 
-      {showBlockedBanner ? (
+      {bannerMessage ? (
         <p
           role="alert"
           className="flex items-start gap-2 rounded-xl bg-destructive/10 px-3.5 py-3 text-sm text-destructive"
@@ -224,7 +219,7 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
             className="mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
-          This account is blocked. Contact RupChorcha to restore access.
+          {bannerMessage}
         </p>
       ) : null}
 
@@ -233,14 +228,16 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
         variant="outline"
         className="h-11 w-full rounded-full border-border bg-transparent text-sm hover:bg-blush hover:text-plum"
         onClick={handleGoogleSignIn}
-        disabled={busy}
+        disabled={busy || !googleAvailable}
       >
         {googleLoading ? (
           <Loader2Icon className="animate-spin" aria-hidden="true" />
         ) : (
           <GoogleIcon />
         )}
-        Continue with Google
+        {googleAvailable
+          ? "Continue with Google"
+          : "Google sign-in unavailable"}
       </Button>
 
       <div className="flex items-center gap-3 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
@@ -347,7 +344,7 @@ function SignInForm({ blocked = false }: { blocked?: boolean }) {
       <p className="text-sm leading-6 text-muted-foreground">
         New to RupChorcha?{" "}
         <Link
-          href="/sign-up"
+          href={signUpHref}
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
           Create an account

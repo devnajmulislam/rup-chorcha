@@ -3,8 +3,7 @@ import Link from "next/link"
 
 import { SignUpForm } from "@/components/auth/SignUpForm"
 import { Container } from "@/components/shared/Container"
-import { Footer } from "@/components/shared/Footer"
-import Navbar from "@/components/shared/Navbar"
+import { sanitizeRedirectPath } from "@/lib/roles"
 
 export const metadata: Metadata = {
   title: "Sign Up",
@@ -12,10 +11,23 @@ export const metadata: Metadata = {
     "Create your RupChorcha account with email and password or Google to book salon services.",
 }
 
-export default function SignUpPage() {
+function firstParam(value?: string | string[]): string {
+  if (Array.isArray(value)) {
+    return value[0] ?? ""
+  }
+  return value ?? ""
+}
+
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string | string[] }>
+}) {
+  const params = await searchParams
+  const redirectTo = sanitizeRedirectPath(firstParam(params.redirect), "")
+
   return (
     <div className="flex min-h-full flex-col">
-
       <main className="flex-1 py-12 sm:py-16 lg:py-20">
         <Container className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:items-start lg:gap-16">
           <div className="flex max-w-xl flex-col gap-5">
@@ -43,7 +55,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
-            <SignUpForm />
+            <SignUpForm redirectTo={redirectTo} />
           </div>
         </Container>
       </main>
