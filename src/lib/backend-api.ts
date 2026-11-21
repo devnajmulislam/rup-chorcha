@@ -7,13 +7,18 @@ import type {
   AdminCustomerDetail,
   AdminDashboardData,
   AdminService,
+  AdminTransaction,
   AdminUserCounts,
   AppointmentStatus,
   CustomerAppointment,
   CustomerDashboardData,
+  CustomerTransaction,
   PaginationMeta,
+  PaymentSessionSummary,
   ServiceInput,
   ServiceStatus,
+  TransactionCounts,
+  TransactionStatus,
   UserAccessStatus,
   UserProfile,
 } from "@/lib/dashboard-types"
@@ -229,6 +234,88 @@ const adminUserDetailResponseSchema = z.object({
 const profileResponseSchema = z.object({
   success: z.literal(true),
   data: userProfileSchema,
+})
+
+const transactionCountsSchema = z.object({
+  all: z.number().int().min(0),
+  paid: z.number().int().min(0),
+  failed: z.number().int().min(0),
+  pending: z.number().int().min(0),
+})
+
+const customerTransactionSchema = z.object({
+  id: z.string().min(1),
+  appointmentId: z.string(),
+  serviceId: z.string(),
+  serviceName: z.string(),
+  serviceCategory: z.string(),
+  appointmentDate: z.string().nullable(),
+  appointmentDateLocal: z.string().nullable(),
+  timeSlot: z.string().nullable(),
+  appointmentStatus: z.enum(["pending", "confirmed", "cancelled"]).nullable(),
+  amount: z.number(),
+  currency: z.string(),
+  stripeSessionId: z.string(),
+  status: z.enum(["pending", "paid", "failed"]),
+  failureReason: z.string().nullable(),
+  paidAt: z.string().nullable(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+})
+
+const adminTransactionSchema = customerTransactionSchema.extend({
+  customerId: z.string(),
+  customerName: z.string(),
+  customerEmail: z.string(),
+})
+
+const myTransactionsListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(customerTransactionSchema),
+  meta: paginationMetaSchema.extend({
+    counts: transactionCountsSchema,
+  }),
+})
+
+const adminTransactionsListResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(adminTransactionSchema),
+  meta: paginationMetaSchema.extend({
+    counts: transactionCountsSchema,
+    totalPaidRevenueCents: z.number().int().min(0),
+    currency: z.string(),
+  }),
+})
+
+const paymentSessionResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.object({
+    sessionId: z.string().min(1),
+    transactionId: z.string().min(1),
+    status: z.enum(["pending", "paid", "failed"]),
+    isFinal: z.boolean(),
+    amount: z.number(),
+    currency: z.string(),
+    failureReason: z.string().nullable(),
+    paidAt: z.string().nullable(),
+    createdAt: z.string().nullable(),
+    updatedAt: z.string().nullable(),
+    timezone: z.string(),
+    appointment: z
+      .object({
+        id: z.string().min(1),
+        serviceId: z.string(),
+        serviceName: z.string(),
+        serviceCategory: z.string(),
+        appointmentDate: z.string().nullable(),
+        appointmentDateLocal: z.string().nullable(),
+        timeSlot: z.string(),
+        servicePrice: z.number(),
+        status: z.enum(["pending", "confirmed", "cancelled"]),
+        paymentStatus: z.enum(["unpaid", "paid"]),
+      })
+      .nullable(),
+  }),
 })
 
 type ExpressApiErrorKind =
@@ -986,6 +1073,142 @@ async function updateMyProfileWithBackend(
   return { ok: true, data: res.data.data }
 }
 
+async function fetchMyAppointmentById(
+  accessToken: string,
+  appointmentId: string
+): Promise<ExpressApiResult<CustomerAppointment>> {
+  const res = await requestExpressAuthenticated({
+    path: `/api/appointments/my/${encodeURIComponent(appointmentId)}`,
+    accessToken,
+    schema: customerAppointmentSingleResponseSchema,
+  })
+
+  if (!res.ok) {
+    return res
+  }
+
+  return { ok: true, data: mapCustomerAppointment(res.data.data) }
+}
+
+async function fetchPaymentSession(
+  accessToken: string,
+  sessionId: string
+): Promise<ExpressApiResult<PaymentSessionSummary>> {
+  const res = await requestExpressAuthenticated({
+    path: `/api/payments/session/${encodeURIComponent(sessionId)}`,
+    accessToken,
+    schema: paymentSessionResponseSchema,
+  })
+
+  if (!res.ok) {
+    return res
+  }
+
+  return { ok: true, data: res.data.data }
+}
+
+async function fetchMyTransactions(
+  accessToken: string,
+  params: {
+    status?: TransactionStatus
+    page?: number
+    limit?: number
+  } = {}
+): Promise<
+  ExpressApiResult<{
+    items: CustomerTransaction[]
+    meta: PaginationMeta
+    counts: TransactionCounts
+  }>
+> {
+  const query = new URLSearchParams()
+  if (params.status) {
+    query.set("status", params.status)
+  }
+  query.set(
+    "page",
+    String(params.page && params.page > 0 ? Math.floor(params.page) : 1)
+  )
+  query.set(
+    "limit",
+    String(params.limit && params.limit > 0 ? Math.floor(params.limit) : 10)
+  )
+
+  const res = await requestExpressAuthenticated({
+    path: `/api/transactions/my?${query.toString()}`,
+    accessToken,
+    schema: myTransactionsListResponseSchema,
+  })
+
+  if (!res.ok) {
+    return res
+  }
+
+  return {
+    ok: true,
+    data: {
+      items: res.data.data,
+      meta: res.data.meta,
+      counts: res.data.meta.counts,
+    },
+  }
+}
+
+async function fetchAdminTransactions(
+  accessToken: string,
+  params: {
+    status?: TransactionStatus
+    search?: string
+    page?: number
+    limit?: number
+  } = {}
+): Promise<
+  ExpressApiResult<{
+    items: AdminTransaction[]
+    meta: PaginationMeta
+    counts: TransactionCounts
+    totalPaidRevenueCents: number
+    currency: string
+  }>
+> {
+  const query = new URLSearchParams()
+  if (params.status) {
+    query.set("status", params.status)
+  }
+  if (params.search?.trim()) {
+    query.set("search", params.search.trim().slice(0, 100))
+  }
+  query.set(
+    "page",
+    String(params.page && params.page > 0 ? Math.floor(params.page) : 1)
+  )
+  query.set(
+    "limit",
+    String(params.limit && params.limit > 0 ? Math.floor(params.limit) : 10)
+  )
+
+  const res = await requestExpressAuthenticated({
+    path: `/api/admin/transactions?${query.toString()}`,
+    accessToken,
+    schema: adminTransactionsListResponseSchema,
+  })
+
+  if (!res.ok) {
+    return res
+  }
+
+  return {
+    ok: true,
+    data: {
+      items: res.data.data,
+      meta: res.data.meta,
+      counts: res.data.meta.counts,
+      totalPaidRevenueCents: res.data.meta.totalPaidRevenueCents,
+      currency: res.data.meta.currency,
+    },
+  }
+}
+
 export {
   cancelAdminAppointment,
   cancelMyAppointment,
@@ -997,11 +1220,15 @@ export {
   fetchAdminDashboard,
   fetchAdminServiceById,
   fetchAdminServices,
+  fetchAdminTransactions,
   fetchAdminUserById,
   fetchAdminUsers,
   fetchCustomerDashboard,
+  fetchMyAppointmentById,
   fetchMyAppointments,
   fetchMyProfile,
+  fetchMyTransactions,
+  fetchPaymentSession,
   getApiBaseUrl,
   getAppOriginHeader,
   setAdminUserBlocked,

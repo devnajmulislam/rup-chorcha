@@ -10,28 +10,52 @@ import { buttonVariants } from "@/components/ui/button"
 import {
   fetchCustomerDashboard,
   fetchMyAppointments,
+  fetchMyTransactions,
 } from "@/lib/backend-api"
 import type {
   AppointmentStatus,
-  CustomerTransaction,
+  PaginationMeta,
+  TransactionCounts,
+  TransactionStatus,
 } from "@/lib/dashboard-types"
 import { requireRole } from "@/lib/session"
-import { getCustomerTransactions } from "@/lib/transactions-legacy"
 import { cn } from "cn"
 
 export const metadata: Metadata = {
   title: "My Appointments",
   description:
-    "Every appointment request and payment record submitted under your RupChorcha account.",
+    "Every appointment request and Stripe payment record submitted under your RupChorcha account.",
 }
 
 export const dynamic = "force-dynamic"
 
-const VALID_STATUSES = new Set<AppointmentStatus>([
+const VALID_APPOINTMENT_STATUSES = new Set<AppointmentStatus>([
   "pending",
   "confirmed",
   "cancelled",
 ])
+
+const VALID_TRANSACTION_STATUSES = new Set<TransactionStatus>([
+  "pending",
+  "paid",
+  "failed",
+])
+
+const EMPTY_PAGINATION_META: PaginationMeta = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPrevPage: false,
+}
+
+const EMPTY_TRANSACTION_COUNTS: TransactionCounts = {
+  all: 0,
+  paid: 0,
+  failed: 0,
+  pending: 0,
+}
 
 function singleParam(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? ""
@@ -48,42 +72,60 @@ export default async function CustomerAppointmentsPage({
   searchParams: Promise<{
     status?: string | string[]
     page?: string | string[]
+    tab?: string | string[]
+    txStatus?: string | string[]
+    txPage?: string | string[]
   }>
 }) {
   const session = await requireRole("customer")
   const resolvedParams = await searchParams
 
   const rawStatus = singleParam(resolvedParams.status).toLowerCase()
-  const statusFilter: AppointmentStatus | undefined = VALID_STATUSES.has(
-    rawStatus as AppointmentStatus
-  )
-    ? (rawStatus as AppointmentStatus)
-    : undefined
+  const statusFilter: AppointmentStatus | undefined =
+    VALID_APPOINTMENT_STATUSES.has(rawStatus as AppointmentStatus)
+      ? (rawStatus as AppointmentStatus)
+      : undefined
   const activeFilter: "all" | AppointmentStatus = statusFilter ?? "all"
   const page = parsePageParam(singleParam(resolvedParams.page))
 
-  const [dashboardRes, appointmentsRes, transactions] = await Promise.all([
+  const rawTab = singleParam(resolvedParams.tab).toLowerCase()
+  const activeTab: "appointments" | "payments" =
+    rawTab === "payments" ? "payments" : "appointments"
+
+  const rawTxStatus = singleParam(resolvedParams.txStatus).toLowerCase()
+  const txStatusFilter: TransactionStatus | undefined =
+    VALID_TRANSACTION_STATUSES.has(rawTxStatus as TransactionStatus)
+      ? (rawTxStatus as TransactionStatus)
+      : undefined
+  const activeTxFilter: "all" | TransactionStatus = txStatusFilter ?? "all"
+  const txPage = parsePageParam(singleParam(resolvedParams.txPage))
+
+  const [dashboardRes, appointmentsRes, transactionsRes] = await Promise.all([
     fetchCustomerDashboard(session.accessToken),
     fetchMyAppointments(session.accessToken, {
       status: statusFilter,
       page,
       limit: 10,
     }),
-    getCustomerTransactions(session.user.id).catch(
-      (): CustomerTransaction[] => []
-    ),
+    fetchMyTransactions(session.accessToken, {
+      status: txStatusFilter,
+      page: txPage,
+      limit: 10,
+    }),
   ])
 
   if (
     (!dashboardRes.ok && dashboardRes.kind === "blocked") ||
-    (!appointmentsRes.ok && appointmentsRes.kind === "blocked")
+    (!appointmentsRes.ok && appointmentsRes.kind === "blocked") ||
+    (!transactionsRes.ok && transactionsRes.kind === "blocked")
   ) {
     redirect("/sign-in?blocked=1")
   }
 
   if (
     (!dashboardRes.ok && dashboardRes.kind === "unauthorized") ||
-    (!appointmentsRes.ok && appointmentsRes.kind === "unauthorized")
+    (!appointmentsRes.ok && appointmentsRes.kind === "unauthorized") ||
+    (!transactionsRes.ok && transactionsRes.kind === "unauthorized")
   ) {
     redirect("/sign-in?redirect=%2Fcustomer%2Fappointments")
   }
@@ -99,7 +141,7 @@ export default async function CustomerAppointmentsPage({
       <PageHeader
         eyebrow="Your bookings"
         title="My appointments"
-        description="Only your own requests appear here. Pending requests can be cancelled; confirmed unpaid visits can be paid once checkout is ready."
+        description="Track your salon appointment requests, cancel pending bookings, and pay for confirmed appointments via Stripe Checkout."
         actions={
           <Link
             href="/services"
@@ -141,7 +183,22 @@ export default async function CustomerAppointmentsPage({
             cancelled: dashboardRes.data.stats.cancelledAppointments,
           }}
           activeFilter={activeFilter}
-          transactions={transactions}
+          activeTab={activeTab}
+          transactions={transactionsRes.ok ? transactionsRes.data.items : []}
+          transactionsMeta={
+            transactionsRes.ok
+              ? transactionsRes.data.meta
+              : EMPTY_PAGINATION_META
+          }
+          transactionsCounts={
+            transactionsRes.ok
+              ? transactionsRes.data.counts
+              : EMPTY_TRANSACTION_COUNTS
+          }
+          activeTxFilter={activeTxFilter}
+          transactionsError={
+            transactionsRes.ok ? null : transactionsRes.message
+          }
         />
       )}
     </div>

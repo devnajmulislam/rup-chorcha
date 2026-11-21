@@ -15,6 +15,7 @@ type DashboardPaginationProps = {
   meta: PaginationMeta
   basePath: string
   params?: Record<string, string | undefined>
+  pageParam?: string
 }
 
 type PageSlot = number | "ellipsis-start" | "ellipsis-end"
@@ -47,7 +48,8 @@ function buildPageSlots(current: number, totalPages: number): PageSlot[] {
 function buildHref(
   basePath: string,
   params: Record<string, string | undefined>,
-  page: number
+  page: number,
+  pageParam = "page"
 ): string {
   const query = new URLSearchParams()
 
@@ -58,7 +60,7 @@ function buildHref(
   }
 
   if (page > 1) {
-    query.set("page", String(page))
+    query.set(pageParam, String(page))
   }
 
   const serialized = query.toString()
@@ -69,6 +71,7 @@ function DashboardPagination({
   meta,
   basePath,
   params = {},
+  pageParam = "page",
 }: DashboardPaginationProps) {
   if (meta.totalPages <= 1) {
     return null
@@ -92,7 +95,7 @@ function DashboardPagination({
           <PaginationItem>
             {meta.hasPrevPage ? (
               <Link
-                href={buildHref(basePath, params, prevPage)}
+                href={buildHref(basePath, params, prevPage, pageParam)}
                 aria-label="Go to previous page"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "default" }),
@@ -130,7 +133,7 @@ function DashboardPagination({
             return (
               <PaginationItem key={slot}>
                 <Link
-                  href={buildHref(basePath, params, slot)}
+                  href={buildHref(basePath, params, slot, pageParam)}
                   aria-current={isCurrent ? "page" : undefined}
                   aria-label={`Page ${slot}`}
                   className={cn(
@@ -153,7 +156,7 @@ function DashboardPagination({
           <PaginationItem>
             {meta.hasNextPage ? (
               <Link
-                href={buildHref(basePath, params, nextPage)}
+                href={buildHref(basePath, params, nextPage, pageParam)}
                 aria-label="Go to next page"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "default" }),

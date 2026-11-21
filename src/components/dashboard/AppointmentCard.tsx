@@ -15,10 +15,8 @@ import {
   XCircle,
 } from "lucide-react"
 
-import {
-  cancelAppointmentAction,
-  startPaymentAction,
-} from "@/app/(dashboard)/customer/appointments/actions"
+import { cancelAppointmentAction } from "@/app/(dashboard)/customer/appointments/actions"
+import { startAppointmentCheckout } from "@/lib/payments-client"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import {
   AlertDialog,
@@ -93,6 +91,7 @@ function AppointmentCard({ appointment }: AppointmentCardProps) {
   const [cancelOpen, setCancelOpen] = React.useState(false)
   const [cancelling, setCancelling] = React.useState(false)
   const [paying, setPaying] = React.useState(false)
+  const payInFlightRef = React.useRef(false)
 
   const canCancel = appointment.status === "pending"
   const canPay =
@@ -137,33 +136,53 @@ function AppointmentCard({ appointment }: AppointmentCardProps) {
   }
 
   async function handlePayNow() {
-    if (paying) {
+    if (payInFlightRef.current || paying) {
       return
     }
 
+    payInFlightRef.current = true
     setPaying(true)
 
     try {
-      const result = await startPaymentAction(appointment.id)
+      const result = await startAppointmentCheckout(appointment.id)
 
-      if (!result.success) {
+      if (!result.ok) {
+        payInFlightRef.current = false
+        setPaying(false)
+
+        if (result.blocked) {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
+
+        if (result.unauthorized) {
+          setUser(null)
+          router.replace("/sign-in?redirect=%2Fcustomer%2Fappointments")
+          return
+        }
+
         toast.add({
           title: "Payment unavailable",
           description: result.message,
           type: "error",
         })
+
+        if (result.conflict) {
+          router.refresh()
+        }
         return
       }
 
-      window.location.assign(result.checkoutUrl)
+      window.location.assign(result.url)
     } catch {
+      payInFlightRef.current = false
+      setPaying(false)
       toast.add({
         title: "Payment unavailable",
         description: "We could not reach RupChorcha. Please try again.",
         type: "error",
       })
-    } finally {
-      setPaying(false)
     }
   }
 

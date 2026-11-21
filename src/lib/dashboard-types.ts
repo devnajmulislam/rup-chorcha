@@ -1,6 +1,6 @@
 type AppointmentStatus = "pending" | "confirmed" | "cancelled"
 type PaymentStatus = "unpaid" | "paid"
-type TransactionStatus = "paid" | "failed"
+type TransactionStatus = "pending" | "paid" | "failed"
 type ServiceStatus = "active" | "inactive"
 type UserAccessStatus = "active" | "blocked"
 
@@ -158,28 +158,74 @@ type AdminCustomerDetail = AdminCustomer & {
 type CustomerTransaction = {
   id: string
   appointmentId: string
+  serviceId: string
   serviceName: string
+  serviceCategory: string
   appointmentDate: string | null
+  appointmentDateLocal: string | null
+  timeSlot: string | null
+  appointmentStatus: AppointmentStatus | null
   amount: number
   currency: string
   stripeSessionId: string
   status: TransactionStatus
-  createdAt: string
+  failureReason: string | null
+  paidAt: string | null
+  createdAt: string | null
+  updatedAt: string | null
 }
 
-type AdminTransaction = {
-  id: string
-  appointmentId: string
+type AdminTransaction = CustomerTransaction & {
   customerId: string
   customerName: string
   customerEmail: string
+}
+
+type TransactionCounts = {
+  all: number
+  paid: number
+  failed: number
+  pending: number
+}
+
+type PaymentSessionAppointment = {
+  id: string
+  serviceId: string
   serviceName: string
+  serviceCategory: string
   appointmentDate: string | null
+  appointmentDateLocal: string | null
+  timeSlot: string
+  servicePrice: number
+  status: AppointmentStatus
+  paymentStatus: PaymentStatus
+}
+
+type PaymentSessionSummary = {
+  sessionId: string
+  transactionId: string
+  status: TransactionStatus
+  isFinal: boolean
   amount: number
   currency: string
-  stripeSessionId: string
+  failureReason: string | null
+  paidAt: string | null
+  createdAt: string | null
+  updatedAt: string | null
+  timezone: string
+  appointment: PaymentSessionAppointment | null
+}
+
+type CheckoutSessionData = {
+  transactionId: string
+  appointmentId: string
+  sessionId: string
+  url: string
+  amount: number
+  currency: string
   status: TransactionStatus
-  createdAt: string
+  expiresAt: string | null
+  reused: boolean
 }
 
 type PaginationMeta = {
@@ -239,14 +285,18 @@ export type {
   AdminUserCounts,
   AppointmentStats,
   AppointmentStatus,
+  CheckoutSessionData,
   CustomerAppointment,
   CustomerDashboardData,
   CustomerDashboardStats,
   CustomerTransaction,
   PaginationMeta,
+  PaymentSessionAppointment,
+  PaymentSessionSummary,
   PaymentStatus,
   ServiceInput,
   ServiceStatus,
+  TransactionCounts,
   TransactionStatus,
   UserAccessStatus,
   UserProfile,
