@@ -52,6 +52,11 @@ const servicesListResponseSchema = z.object({
   meta: servicesMetaSchema,
 })
 
+const serviceDetailResponseSchema = z.object({
+  success: z.literal(true),
+  data: publicServiceSchema,
+})
+
 type ServicesListResult =
   | {
       ok: true
@@ -60,6 +65,19 @@ type ServicesListResult =
     }
   | {
       ok: false
+      message: string
+      code: string
+      status: number
+    }
+
+type ServiceDetailResult =
+  | {
+      ok: true
+      service: PublicService
+    }
+  | {
+      ok: false
+      kind: "invalid_id" | "not_found" | "error"
       message: string
       code: string
       status: number
@@ -203,5 +221,146 @@ async function fetchPublicServices(
   return fetchPublicServicesCached(query.toString())
 }
 
-export { fetchPublicServices }
-export type { ServicesListResult }
+const fetchPublicServiceByIdCached = cache(
+  async (rawServiceId: string): Promise<ServiceDetailResult> => {
+    const serviceId = rawServiceId.trim()
+    if (!serviceId) {
+      return {
+        ok: false,
+        kind: "invalid_id",
+        message: "Invalid service ID.",
+        code: "INVALID_SERVICE_ID",
+        status: 400,
+      }
+    }
+
+    const apiUrl = getApiBaseUrl()
+    if (!apiUrl) {
+      return {
+        ok: false,
+        kind: "error",
+        message: "The services catalogue is temporarily unavailable.",
+        code: "BACKEND_NOT_CONFIGURED",
+        status: 503,
+      }
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+    let response: Response
+    try {
+      response = await fetch(
+        `${apiUrl}/api/services/${encodeURIComponent(serviceId)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        }
+      )
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return {
+          ok: false,
+          kind: "error",
+          message: "Loading service details took too long. Please try again.",
+          code: "BACKEND_TIMEOUT",
+          status: 504,
+        }
+      }
+
+      return {
+        ok: false,
+        kind: "error",
+        message:
+          "We could not connect to the RupChorcha service catalogue right now.",
+        code: "BACKEND_UNAVAILABLE",
+        status: 503,
+      }
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    let rawJson: unknown = null
+    try {
+      rawJson = await response.json()
+    } catch {
+      rawJson = null
+    }
+
+    if (!response.ok) {
+      const errObj =
+        rawJson && typeof rawJson === "object"
+          ? (rawJson as { message?: unknown; code?: unknown })
+          : {}
+      const backendMessage =
+        typeof errObj.message === "string" && errObj.message.trim()
+          ? errObj.message.trim()
+          : "We could not load this service right now."
+      const backendCode =
+        typeof errObj.code === "string" && errObj.code.trim()
+          ? errObj.code.trim()
+          : "SERVICE_FETCH_FAILED"
+
+      if (
+        response.status === 400 &&
+        backendCode === "INVALID_SERVICE_ID"
+      ) {
+        return {
+          ok: false,
+          kind: "invalid_id",
+          message: backendMessage,
+          code: backendCode,
+          status: 400,
+        }
+      }
+
+      if (response.status === 404) {
+        return {
+          ok: false,
+          kind: "not_found",
+          message: backendMessage,
+          code: backendCode,
+          status: 404,
+        }
+      }
+
+      return {
+        ok: false,
+        kind: "error",
+        message: backendMessage,
+        code: backendCode,
+        status: response.status,
+      }
+    }
+
+    const parsed = serviceDetailResponseSchema.safeParse(rawJson)
+    if (!parsed.success) {
+      return {
+        ok: false,
+        kind: "error",
+        message:
+          "Received an unexpected response from the service catalogue.",
+        code: "INVALID_SERVICE_RESPONSE",
+        status: 502,
+      }
+    }
+
+    return {
+      ok: true,
+      service: parsed.data.data,
+    }
+  }
+)
+
+async function fetchPublicServiceById(
+  serviceId: string
+): Promise<ServiceDetailResult> {
+  return fetchPublicServiceByIdCached(serviceId)
+}
+
+export { fetchPublicServiceById, fetchPublicServices }
+export type { ServiceDetailResult, ServicesListResult }

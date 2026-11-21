@@ -46,7 +46,9 @@ const getServerSession = cache(async (): Promise<ServerAuthResult> => {
   })
 })
 
-async function requireSession(): Promise<VerifiedSession> {
+async function requireSession(
+  fallbackRedirectPath?: string
+): Promise<VerifiedSession> {
   const session = await getServerSession()
 
   if (session.status === "blocked") {
@@ -59,10 +61,9 @@ async function requireSession(): Promise<VerifiedSession> {
 
   if (session.status !== "authenticated") {
     const incomingHeaders = await headers()
-    const currentPath = sanitizeRedirectPath(
-      incomingHeaders.get("x-pathname"),
-      ""
-    )
+    const currentPath =
+      sanitizeRedirectPath(incomingHeaders.get("x-pathname"), "") ||
+      sanitizeRedirectPath(fallbackRedirectPath, "")
 
     redirect(
       currentPath
