@@ -675,39 +675,38 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 - [x] Acceptance: public APIs never expose inactive services; only admins can mutate services.
 - [x] Commit: `449a45c` (`feat(server): add public and admin services APIs with ImgBB upload infrastructure`) & `ede3cc1` (`docs(server): add backend AGENTS.md and update README for Step 2A services APIs`).
 
-#### Client (Step 2B — Completed for Public Services & Pages; `/services/[id]` deferred to Step 3)
+#### Client (Step 2B & Step 3 — Completed)
 
 - [x] Build the shared service card (`ServiceCard`), resilient image (`ServiceImage`), skeleton (`ServiceGridSkeleton`), and status badge components.
 - [x] Update the home page hero CTA, live featured services (`FeaturedServicesSection`), interactive category links, and Footer navigation links.
-- [x] Build the Browse Services page (`/services`) connected to Express `GET /api/services` with debounced search, category filter, price/name/date sort, pagination (`12`/page), `loading.tsx`, empty/error states, and URL query sync.
-- [ ] Build the protected service details page (`/services/[id]`) with invalid/inactive handling *(Step 3)*.
-- [ ] Show the booking option only for customers; admins see a clear message that admins cannot book *(Step 3)*.
-- [~] Test responsive layouts, loading, empty state, and search behavior (`6/6` live E2E + `2/2` backend-down SSR passed; interactive Chrome responsive click-through blocked by unavailable `chrome_devtools` MCP).
+- [x] Build the Browse Services page (`/services`, isolated under `src/app/services/(list)/`) connected to Express `GET /api/services` with debounced search, category filter, price/name/date sort, pagination (`12`/page), `loading.tsx`, empty/error states, and URL query sync.
+- [x] Build the protected service details page (`/services/[id]` with `layout.tsx`, `loading.tsx`, `not-found.tsx`, `error.tsx`, invalid ID handling, and inactive/404 hiding) *(Step 3, commit `4f327dd`)*.
+- [x] Show the booking option only for customers; admins see a clear policy notice that admins cannot book *(Step 3, commit `4f327dd`)*.
+- [~] Test responsive layouts, loading, empty state, and search behavior (`6/6` Step 2B E2E, `2/2` backend-down SSR, and `5/5` Step 3 E2E passed; interactive Chrome responsive click-through blocked by unavailable `chrome_devtools` MCP `DevToolsActivePort`).
 - [x] Acceptance (Step 2B): only active Express services appear publicly on `/` and `/services`; search/filter/sort/pagination work together via URL query state.
-- [x] Commit: `4eefb87` (`feat(client): integrate Express services API on homepage and Browse Services`).
+- [x] Commit: `4eefb87` (`feat(client): integrate Express services API on homepage and Browse Services`) & `4f327dd` (`feat(client): add protected service details page and customer appointment booking flow`).
 
 ### Phase 3 — Appointments and customer dashboard
 
-#### Backend
+#### Backend (Step 3 — Completed, commit `fc3b1d8`)
 
-- [ ] Add appointment validation and the per-customer duplicate index.
-- [ ] Add the booking API with active-service check, date/slot validation, price snapshot, pending status, and unpaid status.
-- [ ] Add the availability endpoint for the customer's booked slots.
-- [ ] Add customer appointment list, detail, and cancel APIs.
-- [ ] Add the customer dashboard stats API.
-- [ ] Test duplicate slot conflicts, inactive services, past dates, ownership, and cancel rules.
-- [ ] Acceptance: duplicate active slots for the same customer return 409; different customers can use the same slot; customers cannot see or modify others' appointments.
-- [ ] Commit: `feat(server): add appointment booking, availability, and customer appointment APIs`.
+- [x] Add appointment validation (`modules/appointments/appointments.validation.js`) and the per-customer duplicate index (`uniq_appointments_customer_active_slot` in `db/indexes.js`).
+- [x] Add the booking API (`POST /api/appointments`) with active-service check, `Asia/Dhaka` date/slot validation (`09:00`–`18:00`, `90`-day limit), server `servicePrice` snapshot, `pending` status, and `unpaid` paymentStatus.
+- [x] Add the availability endpoint for the customer's booked slots and elapsed same-day slots (`GET /api/services/:id/availability?date=`).
+- [x] Add customer appointment list, detail, and pending cancel APIs (`GET /api/appointments/my`, `GET /api/appointments/my/:id`, `PATCH /api/appointments/my/:id/cancel`).
+- [ ] Add the customer dashboard stats API (`GET /api/dashboard/customer` — Step 4).
+- [x] Test duplicate slot conflicts, overlapping cross-service conflicts, inactive services, past dates, payload spoofing, ownership, and cancel/rebook rules (`npm test`: `13/13` passed across `3` suites).
+- [x] Acceptance: duplicate active slots for the same customer return 409; different customers can use the same slot; customers cannot see or modify others' appointments.
+- [x] Commit: `fc3b1d8` (`feat(server): add customer appointment booking, availability, and ownership APIs`).
 
-#### Client
+#### Client (Step 3 Booking Flow Completed; Customer Dashboard Migration Pending Step 4)
 
-- [ ] Build the booking form with calendar, time slots, and optional message.
-- [ ] Add booking success, conflict, and error feedback.
-- [ ] Build the customer dashboard layout, sidebar, and overview stats.
-- [ ] Build My Appointments with details, cancel confirmation, and status badges.
-- [ ] Test refresh, loading, empty state, and mobile layout.
-- [ ] Acceptance: customer can book, see only their appointments, and cancel only pending ones.
-- [ ] Commit: `feat(client): add booking flow and customer dashboard appointments`.
+- [x] Build `/services/[id]`, BFF availability/booking proxy (`/api/backend/services/[id]/availability`, `/api/backend/appointments`), and the booking form (`AppointmentBookingForm`) with Base UI calendar popover, `Asia/Dhaka` time slots, booked/past slot badges, and optional 500-char notes.
+- [x] Add booking confirmation panel, inline `409 DUPLICATE_APPOINTMENT_SLOT` conflict handling, toast feedback, and `401`/`403 USER_BLOCKED` redirect handling.
+- [ ] Migrate the customer dashboard layout, overview stats, My Appointments list/detail/cancel actions off direct MongoDB to Express APIs *(Step 4)*.
+- [~] Test booking lifecycle, conflict recovery, blocked-user rejection, loading, and error/not-found states (`5/5` Step 3 E2E passed; live Chrome mobile viewport QA pending manual check due to unavailable `chrome_devtools` MCP).
+- [x] Acceptance (Step 3): customer can book an active service with server price snapshot; same-customer duplicate slots return 409; different customers can book the same slot; admin/blocked users cannot book.
+- [x] Commit: `4f327dd` (`feat(client): add protected service details page and customer appointment booking flow`).
 
 ### Phase 4 — Admin management
 
@@ -798,22 +797,22 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 The assignment requires at least 20 meaningful client commits and 12 meaningful server commits.
 
-### Client — target 20+, current 12
+### Client — target 20+, current 13 (14 with Step 3 docs)
 
 - [x] Theme, fonts, providers, toaster
 - [x] Public layout, navbar, footer (Footer route links updated to `/`, `/services`, `/#categories`, `/#why`)
 - [x] Home hero and featured services (live Express active services via `FeaturedServicesSection`; `demoServices` removed)
 - [x] Home categories and extra section (all 7 category cards link to `/services?category=...`)
 - [x] Shared service card, resilient `ServiceImage`, skeletons, and status badges (`ServiceCard` links to `/services/[id]` with `prefetch={false}`)
-- [x] Browse search, filter, sort, and pagination (`/services` connected to Express `GET /api/services` with URL sync)
-- [ ] Service details page
-- [ ] Booking form and dialog
+- [x] Browse search, filter, sort, and pagination (`/services` isolated under `src/app/services/(list)/`, connected to Express `GET /api/services` with URL sync)
+- [x] Service details page (`/services/[id]` with `layout.tsx`, `loading.tsx`, `not-found.tsx`, `error.tsx`, admin policy notice, invalid/inactive checks)
+- [x] Booking form and dialog (`AppointmentBookingForm` with calendar popover, `Asia/Dhaka` slot selector, notes counter, BFF routes `/api/backend/*`, and confirmation panel)
 - [x] Auth client, BFF routes, and sign-up
 - [x] Sign-in and Google OAuth BFF initiation/callback
 - [x] Route guards (`src/proxy.ts`, `src/lib/session.ts`) and role redirects
 - [~] Customer dashboard layout and overview (auth/BFF wired; data queries migrate in Step 4)
-- [~] Customer appointments list and detail (data queries migrate in Step 3–4)
-- [~] Customer cancel flow (migrates in Step 3–4)
+- [~] Customer appointments list and detail (backend `/api/appointments/my*` complete in Step 3A; dashboard UI migrates in Step 4)
+- [~] Customer cancel flow (backend `PATCH /api/appointments/my/:id/cancel` complete in Step 3A; dashboard UI migrates in Step 4)
 - [ ] Pay Now and checkout redirect
 - [ ] Payment success and cancel pages
 - [ ] Customer payment history
@@ -827,7 +826,7 @@ The assignment requires at least 20 meaningful client commits and 12 meaningful 
 - [ ] Responsive, loading, error, and empty-state polish
 - [ ] README and env example (frontend `.env.example` synchronized; `README.md` pending Step 7)
 
-### Server — target 12+, current 6 (commits `7e52bfc` .. `ede3cc1`)
+### Server — target 12+, current 9 (commits `7e52bfc` .. `ef10f2b`)
 
 - [x] Express foundation, env, health, error handling
 - [x] MongoDB connection, collections, and indexes
@@ -837,8 +836,8 @@ The assignment requires at least 20 meaningful client commits and 12 meaningful 
 - [x] ImgBB uploads
 - [x] Service CRUD APIs
 - [x] Public service search, filter, and sort
-- [ ] Appointment booking and availability
-- [ ] Customer appointment APIs
+- [x] Appointment booking and availability (`GET /api/services/:id/availability`, `POST /api/appointments`)
+- [x] Customer appointment APIs (`GET /api/appointments/my`, `GET /api/appointments/my/:id`, `PATCH /api/appointments/my/:id/cancel`)
 - [ ] Admin appointment APIs
 - [ ] Dashboard statistics APIs
 - [ ] User management APIs
@@ -846,8 +845,8 @@ The assignment requires at least 20 meaningful client commits and 12 meaningful 
 - [ ] Stripe checkout API
 - [ ] Stripe webhook and transactions
 - [ ] Customer/admin transaction APIs
-- [ ] Validation, rate limiting, CORS, and security hardening
-- [ ] README and env example
+- [x] Validation, rate limiting, CORS, and security hardening (ongoing review in Step 6)
+- [~] README and env example (`.env.example` synchronized; `README.md` updated through Step 3A; final deployment links pending Step 7)
 
 Do not fake commits by splitting unrelated changes. Each commit should represent the work described.
 
@@ -863,7 +862,7 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 - [~] Google sign-in works (`GET /api/auth/providers`, `POST /api/auth/google`, and `GET /api/auth/callback/google` verified; full interactive Google consent requires manual browser login).
 - [x] Customer and admin redirect to the correct dashboard (verified via SSR + E2E redirects).
 - [x] Blocked user cannot sign in (verified `403 USER_BLOCKED` + `/sign-in?blocked=1`).
-- [x] Blocked user cannot use protected APIs (verified live DB `isBlocked` check on `/api/jwt/me`, `/api/auth/me`, `/api/auth/session`, `/customer`).
+- [x] Blocked user cannot use protected APIs (verified live DB `isBlocked` check on `/api/jwt/me`, `/api/auth/me`, `/api/auth/session`, `/customer`, `/services/[id]`, and `/api/backend/appointments`).
 - [x] Admin cannot be created from public registration (verified injected `role: "admin"` forced to `"customer"`).
 - [x] Session survives page refresh (verified repeated SSR requests with HttpOnly cookies).
 - [~] Sign-out clears the session and updates the navbar (`POST /api/auth/logout` verified clearing cookies + invalidating Express Better Auth DB session; live Chrome UI visual check pending manual verification).
@@ -878,22 +877,22 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 - [x] Search by name works (verified via live `/services?search=...`).
 - [x] Category filter works (verified via live `/services?category=...` + homepage category links + invalid category fallback).
 - [x] Price sorting works in both directions (verified via live `/services?sort=price_asc` & `price_desc`).
-- [ ] Invalid service ID shows a proper error *(backend `GET /api/services/:id` verified `400`/`404`; frontend `/services/[id]` page built in Step 3)*.
-- [ ] Inactive service cannot be booked *(Step 3)*.
+- [x] Invalid service ID shows a proper error (verified `400 INVALID_SERVICE_ID` on Express and `"Invalid service ID"` UI on `/services/[id]`).
+- [x] Inactive service cannot be booked (verified hidden via `404` on `GET /api/services/:id`, `GET /api/services/:id/availability`, `POST /api/appointments`, and streamed not-found UI on `/services/[id]`).
 
 ### Appointments
 
-- [ ] Customer can submit a booking.
-- [ ] Appointment defaults to pending and unpaid.
-- [ ] Same customer cannot duplicate an active date and time slot.
-- [ ] Different customers can book the same slot.
-- [ ] Customer sees only their own appointments.
-- [ ] Customer can cancel only pending appointments.
-- [ ] Customer cannot cancel confirmed or cancelled appointments.
-- [ ] Admin can confirm only pending appointments.
-- [ ] Admin can cancel pending and confirmed appointments.
-- [ ] Admin sees customer, service, message, price, status, payment status, and request date.
-- [ ] Blocked customer cannot book.
+- [x] Customer can submit a booking (verified via `POST /api/backend/appointments` -> Express `POST /api/appointments` -> `201`).
+- [x] Appointment defaults to pending and unpaid (verified `status: "pending"`, `paymentStatus: "unpaid"`, and server-derived `servicePrice` snapshot).
+- [x] Same customer cannot duplicate an active date and time slot (verified pre-check + concurrent cross-service race hitting `uniq_appointments_customer_active_slot` -> `409 DUPLICATE_APPOINTMENT_SLOT`).
+- [x] Different customers can book the same slot (verified Customer B booking the exact same service/date/slot -> `201`).
+- [x] Customer sees only their own appointments (verified in `tests/appointments.test.js` `GET /api/appointments/my` & `403 FORBIDDEN` on cross-customer `/my/:id`).
+- [x] Customer can cancel only pending appointments (verified in `tests/appointments.test.js`, freeing the slot for rebooking).
+- [x] Customer cannot cancel confirmed or cancelled appointments (verified `409 INVALID_STATUS_TRANSITION` in `tests/appointments.test.js`).
+- [ ] Admin can confirm only pending appointments *(Step 4)*.
+- [ ] Admin can cancel pending and confirmed appointments *(Step 4)*.
+- [ ] Admin sees customer, service, message, price, status, payment status, and request date *(Step 4)*.
+- [x] Blocked customer cannot book (verified `307 /sign-in?blocked=1` on `/services/[id]` and `403 USER_BLOCKED` on `POST /api/backend/appointments` + Express).
 
 ### Payments
 
@@ -910,16 +909,16 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 ### UI and deployment
 
 - [ ] Desktop, tablet, and mobile layouts are usable.
-- [ ] No browser `alert()` is used.
-- [ ] Toasts appear for success and failure.
-- [ ] Loading states appear during fetch, booking, and payment.
-- [ ] Error, not-found, and empty states are visible.
-- [ ] Private routes work after refresh.
+- [x] No browser `alert()` is used (verified across auth, public services, and Step 3 booking components).
+- [~] Toasts appear for success and failure (Toast hooks wired for sign-in/up/out and `AppointmentBookingForm`; interactive Chrome visual confirmation pending manual check).
+- [~] Loading states appear during fetch, booking, and payment (blush `loading.tsx` skeletons and in-flight disabled buttons implemented; payment loading deferred to Step 5).
+- [x] Error, not-found, and empty states are visible (verified across `/`, `/services`, and `/services/[id]`).
+- [x] Private routes work after refresh (verified via HttpOnly cookies + SSR checks on `/customer`, `/admin`, and `/services/[id]`).
 - [ ] Production routes do not 404 or 504.
 - [ ] Stripe webhook works on the live site.
 - [ ] Admin credentials work on the live site.
 - [ ] No `.env` file or secret is committed.
-- [ ] Both READMEs are complete.
+- [~] Both READMEs are complete (backend `README.md` updated through Step 3A; client `README.md` & deployment links pending Step 7).
 - [ ] Client commit count is at least 20.
 - [ ] Server commit count is at least 12.
 
@@ -930,17 +929,17 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 - [x] All secrets are in environment variables.
 - [x] `.env` files are gitignored in both repositories.
 - [x] `role` and `isBlocked` are server-controlled and cannot be changed by clients.
-- [ ] Every protected API verifies JWT, role, blocked status, and ownership (verified on Express `/api/jwt/*` and Next.js auth BFF; business REST routes pending Steps 2–5).
-- [ ] Admin endpoints reject customers (verified on `/admin*` pages and `/api/jwt/admin-check`; business APIs pending Steps 2–5).
-- [ ] Customer endpoints reject admins where required (verified on `/customer*` pages and `/api/jwt/customer-check`; business APIs pending Steps 2–5).
-- [ ] Service price and appointment price are server-derived, never trusted from the client.
+- [~] Every protected API verifies JWT, role, blocked status, and ownership (verified on `/api/jwt/*`, `/api/admin/services*`, `/api/services/:id/availability`, `/api/appointments*`, and `/api/backend/*`; remaining admin/profile/payment routes pending Steps 4–5).
+- [x] Admin endpoints reject customers (verified on `/admin*`, `/api/jwt/admin-check`, `/api/admin/services*`, and `/api/admin/uploads/service-image`; remaining Step 4–5 admin routes will reuse `...protect("admin")`).
+- [x] Customer endpoints reject admins where required (verified `403 FORBIDDEN` on `/api/jwt/customer-check`, `/api/services/:id/availability`, `/api/appointments*`, and `/api/backend/appointments`).
+- [x] Service price and appointment price are server-derived, never trusted from the client (`POST /api/appointments` rejects client `servicePrice` via `.strict()` and copies `service.price` server-side).
 - [ ] Payment status is set only by the verified Stripe webhook.
 - [ ] Stripe webhook uses a raw body and signature verification.
 - [ ] Webhook handling is idempotent.
-- [ ] File uploads validate MIME type and size.
-- [ ] Search input is escaped and length-limited.
-- [ ] Request bodies are validated and do not pass raw objects into MongoDB queries.
-- [~] Auth, checkout, and upload routes are rate-limited (`/api/auth` and `/api` rate-limited on Express; checkout & upload routes pending Steps 2 & 5).
+- [x] File uploads validate MIME type and size (verified on Express `lib/imgbb.js` + `middleware/upload.js` magic bytes & `5 MB` cap).
+- [x] Search input is escaped and length-limited (`escapeRegex()`, max `100` chars).
+- [x] Request bodies are validated and do not pass raw objects into MongoDB queries (`.strict()` Zod schemas + explicit allowlisted field projections).
+- [~] Auth, checkout, and upload routes are rate-limited (`/api`, `/api/auth`, and `/api/admin/uploads/service-image` rate-limited on Express; Stripe checkout limiter pending Step 5).
 - [x] CORS uses an explicit origin allowlist with credentials (and BFF enforces same-origin CSRF verification).
 - [x] Cookies are httpOnly and secure in production (`HttpOnly`, `SameSite=Lax`, `Path=/`, HTTPS-aware `Secure`).
 - [x] No stack traces or secrets are exposed in production errors.
@@ -992,7 +991,7 @@ Update this file whenever one of these assumptions changes.
 
 # Project Status & Development Roadmap
 
-> Last updated: 2026-11-21 (Step 1 Part A/B/C1 and Step 2A/2B completed; **Step 3: Protected Service Details (`/services/[id]`) & Appointment Booking System** is next).
+> Last updated: 2026-11-21 (Step 1 Part A/B/C1, Step 2A/2B, and **Step 3: Protected Service Details (`/services/[id]`) & Appointment Booking System** completed; **Step 4: Express Dashboard, Admin & Profile APIs + Frontend Migration** is next).
 >
 > Checkbox legend:
 > - `[x]` Completed and verified
@@ -1007,60 +1006,75 @@ Update this file whenever one of these assumptions changes.
 - [x] Express 5 ESM foundation, MongoDB Atlas connection & index bootstrap, Helmet/CORS/rate limiting, Better Auth + `@better-auth/mongo-adapter`, `jose` HS256 JWT bridge (`/api/jwt/*`), `requireAuth`/`requireNotBlocked`/`requireRole`, and `seed:admin`.
 - [x] Next.js same-origin auth BFF (`/api/auth/*`: `register`, `login`, `logout`, `session`, `me`, `providers`, `google`, `callback/[provider]`, `profile`, `error`), Zod v4 validation, `src/proxy.ts` + server route guards (`getServerSession`, `requireSession`, `requireRole`), CSRF protection, open-redirect sanitation, and `AuthSessionProvider`.
 
-### Step 2A — Express Services APIs & ImgBB Image Upload Infrastructure (`rup-chorcha-backend`, commits `449a45c`, `ede3cc1`)
+### Step 2A — Express Services APIs & ImgBB Image Upload Infrastructure (`rup-chorcha-backend`, commits `449a45c`, `ede3cc1`, `1bf7ec6`)
 
 - [x] Public Services API (`GET /api/services`, `GET /api/services/:id`): active-only enforcement, regex-escaped search, category filter, `newest`/`oldest`/`price_asc`/`price_desc`/`name_asc`/`name_desc` sorting, `skip`/`limit` pagination, safe JSON projection (`id` instead of `_id`), strict ObjectId validation (`400 INVALID_SERVICE_ID`), and compound `services` indexes.
 - [x] Admin Services API (`/api/admin/services*`, protected by `...protect("admin")`): CRUD + status toggle + safe hard-delete vs. appointment-referenced soft-deactivate, JSON or multipart upload support, `.strict()` Zod schemas, duplicate prevention (`409 DUPLICATE_SERVICE`).
 - [x] ImgBB Service Image Upload (`POST /api/admin/uploads/service-image`): admin auth + upload rate limiter before Multer memory storage, magic-byte + MIME + size validation (`lib/imgbb.js`, `middleware/upload.js`), `IMGBB_API_KEY` kept server-only, safe error handling (`503`/`502`/`504`), verified both in `npm test` (`8/8` passed) and via live ImgBB upload.
 
-### Step 2B — Frontend Services & Public Pages Integration (`rup-chorcha`)
+### Step 2B — Frontend Services & Public Pages Integration (`rup-chorcha`, commits `4eefb87`, `8e209c8`)
 
-- [x] Added client/server-safe query normalization & URL builder (`src/lib/services-query.ts`) matching backend categories, sort enums, allowed HTTPS image hosts, page size (`12` browse / `6` featured), and graceful invalid-category handling.
-- [x] Added server-only Express services API client (`src/lib/services-api.ts`) using `API_URL`, Zod response validation, React `cache()` request deduplication, `cache: "no-store"`, 10s `AbortController` timeout, and structured error mapping.
-- [x] Built resilient `ServiceImage` fallback component (`src/components/shared/ServiceImage.tsx`), `ServiceGridSkeleton` blush skeletons (`src/components/shared/ServiceGridSkeleton.tsx`), `RefreshRetryButton` (`src/components/shared/RefreshRetryButton.tsx`), and updated `ServiceCard` (`src/components/shared/ServiceCard.tsx`) with `"View details"` links (`/services/[id]`, `prefetch={false}`).
-- [x] Integrated homepage (`src/app/(root)/page.tsx`, `src/app/(root)/loading.tsx`, `src/components/home/FeaturedServicesSection.tsx`): removed `src/lib/demo-services.ts` and the unused `Footer` import, connected Hero & banner CTAs to `/services`, rendered live Express featured services with `<Suspense>` loading/empty/error states, and converted all 7 category cards to interactive `<Link href="/services?category=...">` cards.
-- [x] Fixed `Footer` navigation anchors (`src/components/shared/Footer.tsx`) to use Next.js `<Link>` routes (`/`, `/services`, `/#categories`, `/#why`).
-- [x] Integrated Browse Services (`src/app/services/page.tsx`, `src/app/services/loading.tsx`, `src/components/services/ServicesCatalogControls.tsx`, `src/components/services/ServicesPagination.tsx`) with live Express listing, 350ms debounced search, category dropdown + quick pills, sort selector, URL-persisted pagination, clear/reset controls, invalid-category warning fallback, and friendly empty/error states.
+- [x] Client/server query normalization & URL builder (`src/lib/services-query.ts`), server-only Express services API client (`src/lib/services-api.ts` using `API_URL`, Zod validation, React `cache()`, `cache: "no-store"`, 10s timeout), resilient `ServiceImage`, `ServiceGridSkeleton`, `RefreshRetryButton`, and updated `ServiceCard` (`prefetch={false}`).
+- [x] Integrated homepage (`src/app/(root)/page.tsx`, `src/app/(root)/loading.tsx`, `src/components/home/FeaturedServicesSection.tsx`) and Browse Services (`src/app/services/(list)/page.tsx`, `src/app/services/(list)/loading.tsx`, `ServicesCatalogControls`, `ServicesPagination`) with live Express active services, search, category filter, sort, pagination, and friendly empty/error states.
+
+### Step 3 — Protected Service Details (`/services/[id]`) & Appointment Booking System (`rup-chorcha-backend` `fc3b1d8` & `ef10f2b`; `rup-chorcha` `4f327dd`)
+
+- [x] **Express Appointments & Customer Availability APIs (`rup-chorcha-backend`, `fc3b1d8`):**
+  - Added `Asia/Dhaka` booking schedule constants (`config/constants.js`: `09:00`–`18:00` 1-hour slots, `MAX_BOOKING_ADVANCE_DAYS = 90`, `500`-char message limit, `APPOINTMENT_STATUSES`, `PAYMENT_STATUSES`) and date/slot utilities (`utils/salonTime.js`).
+  - Added `.strict()` Zod schemas (`modules/appointments/appointments.validation.js`), service layer (`appointments.service.js`), and controllers (`appointments.controller.js`) for customer-only routes (`...protect("customer")`):
+    - `GET /api/services/:id/availability?date=YYYY-MM-DD` (active service check + customer's active booked slots + elapsed `Asia/Dhaka` slots).
+    - `POST /api/appointments` (active service lookup, future date/slot validation, server `servicePrice` snapshot, `pending`/`unpaid` defaults, and `uniq_appointments_customer_active_slot` 409 duplicate guard while permitting different customers on the same slot).
+    - `GET /api/appointments/my`, `GET /api/appointments/my/:id`, `PATCH /api/appointments/my/:id/cancel` (strict customer ownership + `403 FORBIDDEN` + pending-only cancellation).
+  - Verified with `tests/appointments.test.js` (`13/13` tests passed across `3` suites).
+- [x] **Next.js Protected Service Details & Booking BFF (`rup-chorcha`, `4f327dd`):**
+  - Extended `src/proxy.ts` matcher to `/services/:path+` (keeping `/services` public), updated `requireSession()` in `src/lib/session.ts` to preserve internal return URLs, and isolated `/services` into `src/app/services/(list)/{page.tsx,loading.tsx}` so `/services/[id]` server auth checks run before streaming (`307 /sign-in?redirect=...` and `307 /sign-in?blocked=1`).
+  - Added server-only BFF helpers (`src/lib/backend-bff.ts`) with automatic HS256 JWT refresh, blocked-user cookie clearing (`403 USER_BLOCKED`), and customer-only BFF proxy routes: `GET /api/backend/services/[id]/availability` and `POST /api/backend/appointments` (with `verifySameOriginCsrf` + Zod validation).
+  - Built `/services/[id]` (`layout.tsx`, `page.tsx`, `loading.tsx`, `not-found.tsx`, `error.tsx`), booking schemas/date utilities (`src/lib/booking.ts`), `fetchPublicServiceById()` (`src/lib/services-api.ts`), and interactive `AppointmentBookingForm` (`src/components/services/AppointmentBookingForm.tsx` with Base UI `Popover` + `Calendar`, live availability loading, past/booked slot states, duplicate-submit guard, inline `409` conflict recovery, toast feedback, confirmation view, and customer-only admin policy notice).
 
 ## B. Current Project Status
 
 ### Implemented Functionality
 
-- **Backend (`rup-chorcha-backend`, latest commit `ede3cc1`):** Express foundation, MongoDB connection & indexes, Better Auth + HS256 JWT + RBAC middleware, `seed:admin`, public `/api/services*`, admin `/api/admin/services*`, and `POST /api/admin/uploads/service-image` (ImgBB) are complete and tested.
-- **Frontend Auth & Public Services Pages (`rup-chorcha`):** Same-origin `/api/auth/*` BFF, server route guards, live `/` featured services & category links, and live `/services` search/filter/sort/pagination UI are complete and verified against Express + MongoDB.
-- **Preserved Existing Dashboard UI (pending Steps 3–5):** Protected Customer & Admin dashboard views remain intact.
+- **Backend (`rup-chorcha-backend`, latest commit `ef10f2b`, 9 commits):** Express foundation, MongoDB connection & indexes, Better Auth + HS256 JWT + RBAC middleware, `seed:admin`, public `/api/services*`, admin `/api/admin/services*`, ImgBB `/api/admin/uploads/service-image`, customer `/api/services/:id/availability`, and `/api/appointments*` (`POST /`, `/my`, `/my/:id`, `/my/:id/cancel`) are complete and tested.
+- **Frontend (`rup-chorcha`, `13` code commits + Step 3 docs commit):** Same-origin `/api/auth/*` BFF, server route guards, live `/` and `/services`, protected `/services/[id]` detail page, `/api/backend/services/[id]/availability`, `/api/backend/appointments`, and `AppointmentBookingForm` are complete and verified.
+- **Preserved Existing Dashboard UI (pending Steps 4–5):** Customer & Admin dashboard pages/actions (`src/app/(dashboard)/*`) remain untouched in Step 3 so existing dashboard behavior does not break mid-milestone.
 
-### Incomplete Functionality (Out of Step 2B Scope)
+### Incomplete Functionality (Out of Step 3 Scope)
 
-- Protected `/services/[id]` service detail page and appointment booking flow (Express `/api/services/:id/availability`, `/api/appointments*`, and client `/services/[id]` page) — **Step 3**.
-- Migrating Customer & Admin dashboard queries/mutations/uploads (`src/lib/db.ts`, `src/lib/services.ts`, `src/lib/appointments.ts`, `src/lib/admin.ts`, `src/app/api/admin/uploads/service-image/route.ts`) from direct Next.js MongoDB access to Express + BFF — **Step 4**.
-- Stripe Checkout, raw-body webhook, `/api/payments/*`, `/api/transactions/*`, `/payment/success`, and `/payment/cancel` — **Step 5**.
-- `not-found.tsx`, final polish, `README.md` completion, client commit target (20+), backend commit target (12+), and production deployment — **Steps 6–7**.
+- **Step 4:** Express `/api/dashboard/*`, `/api/admin/appointments*`, `/api/admin/users*` (block/unblock customers only), `/api/profile`, `/api/uploads/profile-image`, and migrating Customer & Admin dashboard pages/actions (`src/lib/db.ts`, `src/lib/services.ts`, `src/lib/appointments.ts`, `src/lib/admin.ts`, `src/app/api/admin/uploads/service-image/route.ts`) off direct Next.js MongoDB/ImgBB access to Express + BFF.
+- **Step 5:** Stripe Checkout, raw-body webhook, `/api/payments/*`, `/api/transactions/*`, `/payment/success`, and `/payment/cancel`.
+- **Steps 6–7:** Global `src/app/not-found.tsx`, final UI polish, `README.md` completion, client commit target (`20+`), server commit target (`12+`), and production deployment.
 
 ### Known Issues & Limitations
 
-- **Chrome DevTools MCP Blocked Live Browser Inspection:** `chrome_devtools` MCP failed to connect (`ENOENT` on `DevToolsActivePort`), so visual responsive checks and interactive DOM click-through in a real Chrome window could not run automatically and require manual browser QA.
-- **Host Express Process Restart Needed for Live `IMGBB_API_KEY`:** The pre-existing `node --watch` host backend process on port `5000` was started before `IMGBB_API_KEY` was added to `rup-chorcha-backend/.env`, so port `5000` still returned `503 IMAGE_UPLOAD_NOT_CONFIGURED`; live ImgBB upload was verified end-to-end (`200 OK`) against an in-process Express app loaded from current `rup-chorcha-backend/.env`. Restart the port `5000` process so it reloads `.env`.
-- **Stateless JWT Window on Logout:** `POST /api/auth/logout` invalidates the Better Auth server session and clears cookies, while the short-lived 15m HS256 JWT has no JTI blocklist if extracted prior to logout (`isBlocked` is still checked live in MongoDB on `/api/jwt/me`).
-- **Temporary Direct Env Vars in Next.js:** `MONGODB_URI`, `MONGODB_DB_NAME`, and `IMGBB_API_KEY` remain temporarily in `rup-chorcha` for un-migrated admin/customer dashboard Server Actions until Steps 3–4 complete.
-- **`/services/[id]` Detail Route Deferred to Step 3:** Clicking `"View details"` on a `ServiceCard` targets `/services/[id]` (`prefetch={false}`), which renders Next.js not-found until Step 3 implements that page.
+- **Chrome DevTools MCP Blocked Live Browser Inspection:** `chrome_devtools` MCP failed to connect (`ENOENT` on `C:\Users\Najmul Islam\AppData\Local\Google\Chrome\User Data\DevToolsActivePort`), so visual responsive layout inspection and interactive DOM click-through on `/services/[id]` require manual browser QA.
+- **Temporary Direct Env Vars in Next.js:** `MONGODB_URI`, `MONGODB_DB_NAME`, and `IMGBB_API_KEY` remain temporarily in `rup-chorcha` for un-migrated dashboard Server Actions until Step 4 replaces them with Express/BFF calls.
+- **Service-Specific Booking URL Preservation After Login (`?redirect=`):** Works end-to-end when opening `/services/[id]` directly while logged out (`/sign-in?redirect=%2Fservices%2F<id>` -> redirects back cleanly after sign-in). Note that when Next.js `loading.tsx` wraps dynamic pages in `<Suspense>`, `notFound()` renders `not-found.tsx` with `<meta name="robots" content="noindex" />` inside the streamed response rather than non-streamed 404 headers.
 
 ## C. Architecture
 
-### Public Services & Search/Filter/Sort/Pagination Data Flow (Step 2B)
+### Protected Service Details & Appointment Booking Flow (Step 3)
 
 ```text
-Browser
-  -> GET / or GET /services?search=&category=&sort=&page=
-       -> Next.js Server Component (force-dynamic; awaits searchParams)
-            -> normalizeServicesSearchParams() [src/lib/services-query.ts]
-            -> fetchPublicServices() [React cache(), cache: "no-store", API_URL]
-                 -> Express GET /api/services?search=&category=&sort=&page=&limit=
-                      -> MongoDB services collection (status: "active", projection + skip/limit)
+Browser (Customer / Admin / Blocked / Guest)
+  -> GET /services/[id]
+       -> src/proxy.ts (optimistic cookie check on /services/:path+, keeps /services public; forwards x-pathname)
+       -> src/app/services/[id]/layout.tsx (outside services/(list) Suspense group!)
+            -> requireSession(/services/<id>) -> Express /api/jwt/me or /api/jwt/token (live DB role + isBlocked check)
+                 - Blocked -> HTTP 307 /sign-in?blocked=1
+                 - Unauth  -> HTTP 307 /sign-in?redirect=%2Fservices%2F<id>
+       -> src/app/services/[id]/page.tsx -> fetchPublicServiceById(id) [React cache(), API_URL/api/services/:id]
+            - Customer -> renders AppointmentBookingForm
+            - Admin    -> renders customer-only policy notice (no booking controls)
+            - Missing/Inactive -> notFound() | Invalid ObjectId -> clear error state
+  -> Customer selects date -> GET /api/backend/services/[id]/availability?date=YYYY-MM-DD
+       -> resolveBffSession() -> Express GET /api/services/:id/availability
+  -> Customer submits -> POST /api/backend/appointments (verifySameOriginCsrf + Zod + customer role check)
+       -> Express POST /api/appointments -> active check + Asia/Dhaka future/slot check + server servicePrice snapshot
+       -> MongoDB appointments insert guarded by partial unique index uniq_appointments_customer_active_slot -> 201 or 409
 ```
 
-- **Search / Filter / Sort / Pagination behavior:** `ServicesCatalogControls` holds controlled input state, syncs external URL prop changes (e.g. Back/Forward or Clear filters) during render without losing keystrokes or blurring focus, debounces typing by `350ms` (`router.replace` with `{ scroll: false }`, submitting immediately on `Enter`), updates category via select or quick-filter pills (`page: 1`), updates sort (`newest`, `price_asc`, `price_desc`, `name_asc`, `name_desc`, `oldest`), and preserves shareable query params in `/services?...`. Invalid URL categories do not trigger backend 400 failures: `normalizeServicesSearchParams` falls back to showing all active services alongside a dismissible warning banner.
-- **Next.js Same-Origin Auth BFF (`/api/auth/*`):** Unchanged from Step 1 (`register`, `login`, `logout`, `session`, `me`, `providers`, `google`, `callback/[provider]`, `profile`, `error`) with `HttpOnly`, `SameSite=Lax`, `Path=/`, HTTPS-aware `Secure` cookies, CSRF protection (`verifySameOriginCsrf`), `NEXT_PUBLIC_APP_URL`-anchored `getAppOrigin()`, and `sanitizeRedirectPath()`.
+- **Why `(list)` route group exists (`src/app/services/(list)/`):** Keeping `loading.tsx` inside `src/app/services/(list)/` prevents Browse Services' `<Suspense>` boundary from wrapping sibling `src/app/services/[id]/layout.tsx`, guaranteeing true HTTP `307` status headers before HTML streaming begins for unauthenticated, expired, or blocked requests on `/services/[id]`.
 
 ## D. Environment Variables
 
@@ -1071,10 +1085,10 @@ Never write actual secret values into `AGENTS.md`, READMEs, or client code. Keep
 | Variable | Visibility | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | Public / Client+Server | Canonical Next.js origin (`http://localhost:3000` locally) used by `getAppOrigin()`, CSRF checks, and BFF callbacks |
-| `API_URL` | Server-only | Express backend base URL (`http://localhost:5000` locally) used exclusively by Next.js server components (`src/lib/services-api.ts`, `src/lib/auth.ts`) and BFF routes |
-| `MONGODB_URI` | Server-only (temporary) | Direct MongoDB URI used only by un-migrated dashboard modules until Steps 3–4 |
+| `API_URL` | Server-only | Express backend base URL (`http://localhost:5000` locally) used exclusively by Next.js server helpers and `/api/backend/*` + `/api/auth/*` BFF routes |
+| `MONGODB_URI` | Server-only (temporary) | Direct MongoDB URI used only by un-migrated dashboard modules until Step 4 |
 | `MONGODB_DB_NAME` | Server-only (temporary) | Target database name (`rup-chorcha`) for legacy dashboard queries |
-| `IMGBB_API_KEY` | Server-only (temporary) | Next.js admin image upload fallback key until Step 4 points admin UI at Express `/api/admin/uploads/service-image` |
+| `IMGBB_API_KEY` | Server-only (temporary) | Next.js admin image upload fallback key until Step 4 migrates admin uploads to Express |
 
 ### Backend (`rup-chorcha-backend/.env` & `.env.example`)
 
@@ -1090,41 +1104,39 @@ Never write actual secret values into `AGENTS.md`, READMEs, or client code. Keep
 | `UPLOAD_RATE_LIMIT_WINDOW_MS`, `UPLOAD_RATE_LIMIT_MAX` | Server-only (optional) | Rate-limiting settings for upload routes |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CURRENCY` | Server-only (Step 5) | Reserved for Stripe Checkout & raw-body webhooks |
 
-## E. Executed Tests & Verification Results
+## E. Executed Tests & Verification Results (Step 3)
 
-- **Static Checks & Production Build (`rup-chorcha`):**
+- **Backend Syntax & Automated Test Suite (`rup-chorcha-backend`):**
+  - `node --check` -> exit `0` across all backend `.js` files outside `node_modules`.
+  - `npm.cmd test` (`node --test tests/*.test.js`) -> exit `0`, **13/13 passed across 3 suites, 0 failed, 0 skipped** (live MongoDB Atlas + ephemeral Express server; `"Jhanker makeup"` `6b008bfdeda8c9a56f80bc57` untouched; temporary docs cleaned up).
+- **Frontend Static Checks & Production Build (`rup-chorcha`):**
   - `node ./node_modules/next/dist/bin/next typegen` -> exit `0`.
-  - `node ./node_modules/typescript/bin/tsc --noEmit` -> exit `0`, 0 errors.
-  - `npm.cmd run lint` -> exit `0`, 0 errors, **0 warnings** (resolved the previous unused `Footer` warning).
-  - `npm.cmd run build` -> exit `0`, compiled in `26.6s`, TypeScript in `43s`, `29/29` routes built (`ƒ /`, `ƒ /services`, `ƒ Proxy (Middleware)`).
-  - `Select-String` client boundary audit -> `services-api` and `API_URL` appear only in server modules (`src/lib/services-api.ts`, Server Components, BFF routes).
-- **Live ImgBB & Live Frontend/Backend Integration (`verify-step2b-e2e.mjs live` against production `next start -p 3056` + Express + MongoDB Atlas):** **6/6 passed**:
-  1. Live ImgBB PNG upload -> `200 OK`, returned `https://i.ibb.co/HLVv3C77/stage2b-1795238288564-5666.png`, fetched live `200 image/png` *(using fresh Express app with backend `.env`; host `:5000` returned stale `503` until restarted)*.
-  2. Homepage `/` (`200`) -> rendered live active Express services, interactive category links, `/services/[id]` detail links; excluded old `demoServices` and inactive test service.
-  3. Browse Services `/services` (`200`) -> rendered paginated active page 1 (`12`/page) with Page 2 link and excluded inactive test service.
-  4. Search (`?search=`) -> narrowed to live ImgBB card (`i.ibb.co` rendered); empty match displayed `"No matching services"` + `"Clear filters"`.
-  5. Category filtering (`?category=`) -> filtered category results cleanly; invalid category rendered graceful warning banner + active fallback items.
-  6. Price sorting (`?sort=price_asc`, `price_desc`) & Page 2 traversal -> verified inverted sort order and Page 2 results + Previous link. All temporary test services/user deleted cleanly; `"Jhanker makeup"` untouched.
-- **Live Host Dev Server Probe (`http://localhost:3000/` and `/services`):** returned `200` showing live `"Jhanker makeup"`, absent `demoServices`, and invalid-category warning banner.
-- **Backend-Unavailable Error Handling (`verify-step2b-e2e.mjs backend-down` against `next start -p 3057` with `API_URL=http://127.0.0.1:59999`):** **2/2 passed** (`GET /` and `GET /services` returned `200` with friendly error alerts and `"Try again"` button without exposing internal URLs).
-- **Not Executed Automatically:** Interactive Chrome UI & responsive viewport click-through (`chrome_devtools` MCP `DevToolsActivePort` unavailable).
+  - `node ./node_modules/typescript/bin/tsc --noEmit` -> exit `0` (`0` errors).
+  - `npm.cmd run lint` -> exit `0` (`0` errors, `0` warnings).
+  - `npm.cmd run build` -> exit `0`, compiled in `14.6s`, TypeScript in `16.6s`, `30/30` static/route worker generation (`ƒ /services`, `ƒ /services/[id]`, `ƒ /api/backend/appointments`, `ƒ /api/backend/services/[id]/availability`, `ƒ Proxy (Middleware)`).
+- **Full-Stack Step 3 E2E Integration Suite (`verify-step3-e2e.mjs` against `next start -p 3058` + Express + MongoDB Atlas):** **5/5 passed**:
+  1. Public `/services` accessible (`200`); unauthenticated `/services/[id]` returns `307 /sign-in?redirect=%2Fservices%2F<id>`; unauthenticated `/api/backend/services/[id]/availability` and `POST /api/backend/appointments` return `401`.
+  2. Authenticated customer views active `/services/[id]` (`200`, `$85.00`, booking form), invalid ObjectId (`200`, `"Invalid service ID"`), missing ID and inactive service (streamed `Service not found` + `noindex`, hidden inactive title).
+  3. Admin sees customer-only notice (no booking form) on `/services/[id]` and receives `403` on `POST /api/backend/appointments`.
+  4. Customer availability (`GET /api/backend/services/[id]/availability`) and booking (`POST /api/backend/appointments`) succeed (`201`, `$85.00` snapshot ignoring client `servicePrice`, `pending`/`unpaid`), same-customer duplicate slot returns `409 DUPLICATE_APPOINTMENT_SLOT`, availability reflects the booked slot, a second customer books the identical date/slot (`201`), and invalid-origin `POST` returns `403 CSRF_FORBIDDEN`.
+  5. Blocked customer receives `307 Location: /sign-in?blocked=1` on `/services/[id]` and `403 USER_BLOCKED` on `POST /api/backend/appointments`. All temporary test records cleaned up; `"Jhanker makeup"` untouched.
+- **Not Executed Automatically:** Interactive Chrome UI & mobile/tablet/desktop viewport QA (`chrome_devtools` MCP `DevToolsActivePort` unavailable).
 
 ## F. Development Roadmap
 
 1. [x] **Step 1 — Express Foundation, DB Indexes, Better Auth/JWT & Same-Origin Next.js Auth BFF (`Part A` `0b2c6eb`, `Part B` `5a961b2`, `Part C Stage 1` `8e713d8`)**
-2. [x] **Step 2 — Services APIs & Public Pages (`Step 2A` `449a45c` / `ede3cc1` / `1bf7ec6`, `Step 2B` `4eefb87`)**
-3. [ ] **Step 3 — Protected Service Details (`/services/[id]`) & Appointment Booking System** *(Next Recommended Task)*: Implement Express service availability (`GET /api/services/:id/availability`) and booking/my-appointments APIs (`POST /api/appointments`, `/api/appointments/my*` with active-service check, price snapshot, and 409 per-customer duplicate slot guard) + Next.js `/services/[id]` page (auth redirect, invalid/inactive state, admin-cannot-book message, and booking form).
-4. [ ] **Step 4 — Express Dashboard, Admin & Profile APIs + Frontend Migration**: Implement Express `/api/dashboard/*`, `/api/admin/appointments*`, `/api/admin/users*`, `/api/profile`, `/api/uploads/profile-image`, and migrate existing Customer & Admin dashboard pages/actions (`src/lib/db.ts`, `services.ts`, `appointments.ts`, `admin.ts`, service upload proxy) to Express + BFF.
+2. [x] **Step 2 — Services APIs & Public Pages (`Step 2A` `449a45c` / `ede3cc1` / `1bf7ec6`, `Step 2B` `4eefb87` / `8e209c8`)**
+3. [x] **Step 3 — Protected Service Details (`/services/[id]`) & Appointment Booking System (`rup-chorcha-backend` `fc3b1d8` / `ef10f2b`; `rup-chorcha` `4f327dd`)**
+4. [ ] **Step 4 — Express Dashboard, Admin & Profile APIs + Frontend Migration** *(Next Recommended Task)*: Implement Express `/api/dashboard/customer`, `/api/dashboard/admin`, `/api/admin/appointments*` (list, detail, confirm pending, cancel pending/confirmed), `/api/admin/users*` (customers list/detail/block/unblock), `/api/profile`, and `/api/uploads/profile-image`, and migrate Customer & Admin dashboard pages/actions (`src/lib/db.ts`, `services.ts`, `appointments.ts`, `admin.ts`, service upload proxy) off direct MongoDB/ImgBB to Express + BFF.
 5. [ ] **Step 5 — Stripe Checkout, Verified Webhook & Payment Pages**: Implement Stripe Checkout, idempotent raw-body webhook, transaction APIs, `/payment/success`, and `/payment/cancel`.
 6. [ ] **Step 6 — Error Boundaries, Polish, Security & Manual QA**: Add `src/app/not-found.tsx`, remaining loading skeletons, responsive/accessibility/security verification, and clean unused assets.
 7. [ ] **Step 7 — Documentation, Commit Targets & Production Deployment**: Complete both `README.md` files, satisfy >=20 client & >=12 server commits, deploy client (Vercel) and backend (Render/Railway), configure production Stripe/OAuth, and verify live refresh/reload.
 
 ## G. Development Rules & Lessons Learned
 
-- **Preserve all permanent RupChorcha rules:** Never alter existing UI design system tokens, never store secrets in client files or `.env.example`, never trust client-supplied `role`, `isBlocked`, or redirect hosts, and maintain strict separation between `rup-chorcha` and `rup-chorcha-backend`.
-- **Zod v4 ordering & React 19 Compiler patterns:** Call `.optional()` after `.nullable()` in Zod v4, avoid synchronous `setState` inside `useEffect` (adjust state from external URL changes during render using previous-prop comparison so debounced inputs retain focus and pass `react-hooks`), and `await searchParams` in Next.js 16 Server Components.
-- **Avoid premature detail prefetch 404s:** Pass `prefetch={false}` on `<Link href="/services/[id]">` in `ServiceCard` until Step 3 creates the route.
-- **Env reload caveat with `node --watch`:** Adding or updating `.env` on the backend requires restarting the running `node index.js` process because `dotenv/config` only reads `.env` at startup.
-- **Windows / Sandbox verification rules:** Run `node ./node_modules/typescript/bin/tsc --noEmit` and `npm.cmd run lint` locally, and run `npm.cmd run build` and Express/MongoDB tests with network access enabled.
+- **Preserve all permanent RupChorcha rules:** Never alter existing UI design system tokens, never store secrets in client files or `.env.example`, never trust client-supplied `role`, `isBlocked`, prices, or redirect hosts, and maintain strict separation between `rup-chorcha` and `rup-chorcha-backend`.
+- **Keep `loading.tsx` out of parent route segments wrapping auth-guarded children:** A `loading.tsx` on `/services` automatically wraps child segments like `/services/[id]` in `<Suspense>`, flushing HTTP `200` before child `layout.tsx` `redirect()` executes. Isolating public `/services` into `src/app/services/(list)/` preserves exact URLs and loading skeletons while restoring server `307` redirects on `/services/[id]`.
+- **`react-day-picker` v9 `disabled` matchers & BFF origin checks:** Pass separate `[{ before }, { after }]` matchers in `Calendar` `disabled` arrays, and build/test with matching `NEXT_PUBLIC_APP_URL` origins for `verifySameOriginCsrf`.
+- **Windows / Sandbox verification rules:** Run `next typegen`, `tsc --noEmit`, `npm.cmd run lint`, and `node --check` locally; run `npm.cmd run build`, Express/MongoDB tests, and Git commits with network/workspace lock permissions enabled.
 
 
