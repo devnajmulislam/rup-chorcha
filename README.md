@@ -77,4 +77,5 @@ Names only — never commit `.env` or secret values.
 
 - **Frontend Repository (Client):** https://github.com/devnajmulislam/rup-chorcha
 - **Backend Repository (Server):** https://github.com/devnajmulislam/rup-chorcha-backend
-- **Live Website:** Pending Step 7 deployment
+- **Live Website (Vercel):** https://rup-chorcha.vercel.app
+- **Live Backend API (Vercel):** https://rup-chorcha-backend.vercel.app

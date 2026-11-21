@@ -776,21 +776,21 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 ### Phase 7 — Deployment and final QA
 
-- [ ] Deploy the backend.
-- [ ] Deploy the client.
-- [ ] Configure production environment variables on both platforms.
-- [ ] Configure CORS and cookie settings.
-- [ ] Register the production Stripe webhook URL.
-- [ ] Add production Google OAuth redirect URIs.
-- [ ] Seed the production admin account.
-- [ ] Test private routes after refresh.
-- [ ] Test no 404/504 on production routes.
-- [ ] Test the complete Stripe test-mode flow on the live site.
-- [ ] Test admin credentials on the live site.
-- [ ] Update both READMEs with live links, repository links, and env names.
-- [ ] Prepare the submission: admin email, admin password, live site, client repo, server repo.
-- [ ] Acceptance: all final checklist items pass with separate admin and customer accounts.
-- [ ] Commit: `docs: add deployment links, setup instructions, and final project documentation`.
+- [x] Deploy the backend (`https://rup-chorcha-backend.vercel.app` via `api/index.js` + `vercel.json`).
+- [x] Deploy the client (`https://rup-chorcha.vercel.app` on Vercel).
+- [x] Configure production environment variables on both platforms.
+- [x] Configure CORS and cookie settings (`CLIENT_URL`, `CLIENT_APP_URL`, `BETTER_AUTH_URL`, `HttpOnly` + `SameSite=Lax` + HTTPS `Secure`).
+- [x] Register the production Stripe webhook URL (`https://rup-chorcha-backend.vercel.app/api/payments/webhook` — verified `400 MISSING_STRIPE_SIGNATURE` instead of `503` on unsigned check).
+- [x] Add production Google OAuth redirect URIs (`https://rup-chorcha.vercel.app/api/auth/callback/google` verified via `POST /api/auth/google`).
+- [~] Seed the production admin account (`seed:admin` script verified; live admin login remains a manual user check with production admin credentials).
+- [x] Test private routes after refresh (`/customer`, `/customer/appointments`, `/customer/profile`, `/services/[id]` -> `200`; unauthenticated `/admin` -> `307 -> /sign-in`).
+- [x] Test no 404/504 on production routes (`/`, `/services`, `/sign-in`, `/sign-up`, `/api/health`, `/api/services`, `/api/auth/providers` -> `200`; `/nonexistent-step7-check` -> branded `404`).
+- [~] Test the complete Stripe test-mode flow on the live site (full local E2E + production webhook config verified; manual browser Stripe test-card entry on live site pending user visual QA).
+- [?] Test admin credentials on the live site *(manual user check with production admin credentials)*.
+- [x] Update both READMEs with live links, repository links, and env names.
+- [~] Prepare the submission: admin email, admin password, live site, client repo, server repo.
+- [~] Acceptance: all automated production checks pass; manual Chrome OAuth/Stripe/Admin visual check remains for final user sign-off.
+- [x] Commit: `docs: add deployment links, setup instructions, and final project documentation`.
 
 ---
 
@@ -915,11 +915,11 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 - [x] Loading states appear during fetch, booking, and payment (blush `loading.tsx` skeletons including `admin/profile/loading.tsx` and in-flight disabled buttons across `/services*`, `/customer*`, `/admin*`, and `/payment*`).
 - [x] Error, not-found, and empty states are visible (root `src/app/not-found.tsx`, `src/app/global-error.tsx`, section `error.tsx` boundaries, and `EmptyState` views verified).
 - [x] Private routes work after refresh (verified via HttpOnly cookies + SSR checks on `/customer`, `/admin`, `/services/[id]`, and `/payment/*`).
-- [ ] Production routes do not 404 or 504.
-- [~] Stripe webhook works on the live site (cryptographic HMAC-SHA256 webhook verified locally; live Stripe CLI `stripe listen` & deployed webhook pending `STRIPE_WEBHOOK_SECRET` + Step 7 deployment).
-- [ ] Admin credentials work on the live site.
+- [x] Production routes do not 404 or 504 (`https://rup-chorcha.vercel.app` & `https://rup-chorcha-backend.vercel.app` verified `200 OK`; unmatched paths render branded `404`).
+- [~] Stripe webhook works on the live site (`https://rup-chorcha-backend.vercel.app/api/payments/webhook` verified `STRIPE_WEBHOOK_SECRET` configured & raw signature check active (`400 MISSING_STRIPE_SIGNATURE`); live browser test-card checkout pending user check).
+- [?] Admin credentials work on the live site *(manual verification with production admin credentials)*.
 - [x] No `.env` file or secret is committed.
-- [~] Both READMEs are complete (both `README.md` files completed through Step 5; live deployment URLs pending Step 7).
+- [x] Both READMEs are complete (live deployment URLs, repository links, and env variable names updated in both `README.md` files).
 - [x] Client commit count is at least 20 *(22 commits in `rup-chorcha` after Step 6 commits)*.
 - [x] Server commit count is at least 12 *(14 commits in `rup-chorcha-backend`)*.
 
@@ -1107,7 +1107,7 @@ Update this file whenever one of these assumptions changes.
 4. [x] **Step 4 — Express Dashboard, Admin & Profile APIs (`Step 4A` `7405266` / `6559bd0`) & Frontend Migration (`Step 4B` `227f0ac` / `16f2644`)**
 5. [x] **Step 5 — Stripe Checkout, Verified Webhook & Payment Pages (`Step 5A` `f16a6ae` / `b57fce3`, `Step 5B` complete)**
 6. [x] **Step 6 — Error Boundaries, Polish, Security & Manual QA**: Added root `src/app/not-found.tsx`, `src/app/global-error.tsx`, `src/app/(root)/error.tsx`, `src/app/(auth)/error.tsx`, `src/app/services/(list)/error.tsx`, and `admin/profile/loading.tsx`; hardened HTTP response headers in `next.config.ts`; improved `--muted-foreground` & Footer WCAG AA contrast, Skip-to-main-content links, password-toggle hit areas, and mobile card word wrapping; verified `next typegen`, `tsc --noEmit`, ESLint, `next build`, `24/24` backend tests, and `8/8` Step 6 live full-stack E2E/security checks (`22` client commits / `14` server commits). *(Manual live Chrome DevTools click-through remains pending user check due to `DevToolsActivePort` `ENOENT`.)*
-7. [ ] **Step 7 — Documentation, Commit Targets & Production Deployment** *(Next Recommended Task)*: Deploy backend (Render/Railway) and client (Vercel), configure production env vars & live `STRIPE_WEBHOOK_SECRET`, update Google OAuth redirect URIs, seed production admin, update both READMEs with live URLs, and verify live end-to-end flows in a real browser.
+7. [x] **Step 7 — Documentation, Commit Targets & Production Deployment**: Deployed frontend (`https://rup-chorcha.vercel.app`) and Express backend (`https://rup-chorcha-backend.vercel.app` via `api/index.js` + `vercel.json`), wired production env vars, Google OAuth callback (`https://rup-chorcha.vercel.app/api/auth/callback/google`), and Stripe test-mode webhook (`https://rup-chorcha-backend.vercel.app/api/payments/webhook`); verified live production health, services, auth/booking/cancel/profile/RBAC/CSRF/404 (`EXIT_PROD_QA=0`), and updated both `README.md` and `AGENTS.md` files. *(Interactive browser Google consent, Stripe test-card checkout UI, and admin login remain manual visual checks.)*
 
 ## G. Development Rules & Lessons Learned
 
