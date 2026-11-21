@@ -759,20 +759,20 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 ### Phase 6 — Polish and completeness
 
-- [ ] Add loading skeletons for all data pages.
-- [ ] Add `error.tsx`, `not-found.tsx`, and empty states.
-- [ ] Add toasts for every success and failure action.
-- [ ] Remove all `alert()` usage.
-- [ ] Verify responsive layouts on mobile, tablet, and desktop.
-- [ ] Verify keyboard navigation and form labels.
-- [ ] Verify all buttons and navigation links.
-- [ ] Add rate limiting to auth, checkout, and uploads.
-- [ ] Add input sanitization and NoSQL injection protection.
-- [ ] Review files for secrets and sensitive logging.
-- [ ] Add optional demo seed data if useful for screenshots.
-- [ ] Test service deactivation, invalid IDs, booking conflicts, and payment failures.
-- [ ] Acceptance: no broken links, no layout overflow, no browser alerts, and all error paths have feedback.
-- [ ] Commit: `polish: loading, error, empty, responsive, and accessibility improvements`.
+- [x] Add loading skeletons for all data pages (`admin/profile/loading.tsx` added; all dashboard/public/payment segments covered).
+- [x] Add `error.tsx`, `not-found.tsx`, and empty states (added root `src/app/not-found.tsx`, `src/app/global-error.tsx`, `src/app/(root)/error.tsx`, `src/app/(auth)/error.tsx`, and `src/app/services/(list)/error.tsx`).
+- [~] Add toasts for every success and failure action (wired across auth, booking, dashboard, and payment forms; live interactive browser confirmation pending manual QA).
+- [x] Remove all `alert()` usage (`0` calls to `alert()`, `confirm()`, `prompt()`, `localStorage`, or `sessionStorage` in `src/`).
+- [~] Verify responsive layouts on mobile, tablet, and desktop (static & Tailwind responsive audit complete — `overflow-x-auto` tables, `break-words`/`break-all` card text, `min-h-9`/`size-9` tap targets; live Chrome DevTools viewport inspection blocked by `DevToolsActivePort` `ENOENT`, pending manual browser QA).
+- [x] Verify keyboard navigation and form labels (explicit `<label>`/`FieldLabel`, `aria-live`, focus-visible rings, and `Skip to main content` -> `#main-content` links added across `Navbar` and `DashboardShell`).
+- [x] Verify all buttons and navigation links (brand navigation, footer links, pagination, 404/error recovery links verified).
+- [x] Add rate limiting to auth, checkout, and uploads (`authRateLimiter`, `checkoutRateLimiter`, `uploadRateLimiter`, `globalRateLimiter` verified on Express).
+- [x] Add input sanitization and NoSQL injection protection (Zod `.strict()` schemas, `escapeRegex()`, allowlisted fields, parameterized queries verified).
+- [x] Review files for secrets and sensitive logging (static bundle scan across `57` `.next/static` files passed with `0` leaked secrets; HTTP security headers added in `next.config.ts`).
+- [x] Add optional demo seed data if useful for screenshots (`Jhanker makeup` active service + `seed:admin` script present; no hardcoded client demo arrays).
+- [x] Test service deactivation, invalid IDs, booking conflicts, and payment failures (`24/24` backend tests + `8/8` Step 6 live E2E checks passed).
+- [~] Acceptance: no broken links, no layout overflow, no browser alerts, and all error paths have feedback *(automated E2E & code audit pass; manual Chrome click-through across mobile/tablet/desktop remains pending user verification)*.
+- [x] Commit: Step 6 error boundary, accessibility/security polish, and documentation commits (`rup-chorcha` reaches `22` commits).
 
 ### Phase 7 — Deployment and final QA
 
@@ -798,7 +798,7 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 The assignment requires at least 20 meaningful client commits and 12 meaningful server commits.
 
-### Client — target 20+, current 17 before Step 5B commits (19 after Step 5B feature + docs commits)
+### Client — target 20+, reached 22 after Step 6 commits (`19` after Step 5B)
 
 - [x] Theme, fonts, providers, toaster
 - [x] Public layout, navbar, footer (Footer route links updated to `/`, `/services`, `/#categories`, `/#why`)
@@ -824,7 +824,7 @@ The assignment requires at least 20 meaningful client commits and 12 meaningful 
 - [x] Admin appointment management (`/admin/appointments`, `/api/backend/admin/appointments/[id]` -> Express `/api/admin/appointments*`)
 - [x] Admin user management (`/admin/users`, `/api/backend/admin/users/[id]` -> Express `/api/admin/users*`)
 - [x] Admin transactions (`/admin/transactions`, `/api/backend/admin/transactions` -> Express `GET /api/admin/transactions`, strictly read-only with status/search/pagination & revenue summary)
-- [~] Responsive, loading, error, and empty-state polish (dashboard & payment error/loading/empty states complete; root `not-found.tsx` & interactive Chrome QA in Step 6)
+- [x] Responsive, loading, error, and empty-state polish (`not-found.tsx`, `global-error.tsx`, `(root)/error.tsx`, `(auth)/error.tsx`, `services/(list)/error.tsx`, `admin/profile/loading.tsx`, contrast & wrapping fixes, skip links, touch targets)
 - [~] README and env example (frontend `.env.example` & `README.md` completed in Step 5B; final live deployment links pending Step 7)
 
 ### Server — target 12+, current 14 (`7e52bfc` .. `b57fce3`, target met!)
@@ -909,18 +909,18 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 
 ### UI and deployment
 
-- [ ] Desktop, tablet, and mobile layouts are usable.
-- [x] No browser `alert()` is used (verified across auth, public services, booking, dashboard, and payment components).
+- [?] Desktop, tablet, and mobile layouts are usable *(automated layout/overflow CSS audit & responsive rules verified; live Chrome interactive viewport click-through pending manual QA due to Chrome DevTools MCP `DevToolsActivePort` `ENOENT`)*.
+- [x] No browser `alert()` is used (verified `0` calls to `alert()`/`confirm()`/`prompt()`/`localStorage`/`sessionStorage` across `src/`).
 - [~] Toasts appear for success and failure (Toast hooks wired across auth, booking, dashboard, and payment components; interactive Chrome visual confirmation pending manual check).
-- [x] Loading states appear during fetch, booking, and payment (blush `loading.tsx` skeletons and in-flight disabled buttons implemented across `/services*`, `/customer*`, `/admin*`, and `/payment*`).
-- [x] Error, not-found, and empty states are visible (verified across `/`, `/services`, `/services/[id]`, `/customer*`, `/admin*`, and `/payment*`; root `src/app/not-found.tsx` in Step 6).
+- [x] Loading states appear during fetch, booking, and payment (blush `loading.tsx` skeletons including `admin/profile/loading.tsx` and in-flight disabled buttons across `/services*`, `/customer*`, `/admin*`, and `/payment*`).
+- [x] Error, not-found, and empty states are visible (root `src/app/not-found.tsx`, `src/app/global-error.tsx`, section `error.tsx` boundaries, and `EmptyState` views verified).
 - [x] Private routes work after refresh (verified via HttpOnly cookies + SSR checks on `/customer`, `/admin`, `/services/[id]`, and `/payment/*`).
 - [ ] Production routes do not 404 or 504.
 - [~] Stripe webhook works on the live site (cryptographic HMAC-SHA256 webhook verified locally; live Stripe CLI `stripe listen` & deployed webhook pending `STRIPE_WEBHOOK_SECRET` + Step 7 deployment).
 - [ ] Admin credentials work on the live site.
 - [x] No `.env` file or secret is committed.
 - [~] Both READMEs are complete (both `README.md` files completed through Step 5; live deployment URLs pending Step 7).
-- [ ] Client commit count is at least 20 *(19 after Step 5B commits; reaches 20+ in Step 6/7)*.
+- [x] Client commit count is at least 20 *(22 commits in `rup-chorcha` after Step 6 commits)*.
 - [x] Server commit count is at least 12 *(14 commits in `rup-chorcha-backend`)*.
 
 ---
@@ -992,7 +992,7 @@ Update this file whenever one of these assumptions changes.
 
 # Project Status & Development Roadmap
 
-> Last updated: 2026-11-21 (Step 1–5 complete: **Step 5A Express Stripe Checkout, Webhook & Transactions APIs** `f16a6ae` / `b57fce3` and **Step 5B Frontend Payment Integration & Legacy Database Cleanup**; **Step 6: Error Boundaries, Polish, Security & Manual QA** is next).
+> Last updated: 2026-11-21 (**Step 6 — Error Boundaries, Polish, Security & Manual QA** complete with automated E2E + security checks; manual Chrome DevTools visual click-through & `STRIPE_WEBHOOK_SECRET` CLI setup documented; **Step 7: Production Deployment** is next).
 >
 > Checkbox legend:
 > - `[x]` Completed and verified
@@ -1106,8 +1106,8 @@ Update this file whenever one of these assumptions changes.
 3. [x] **Step 3 — Protected Service Details (`/services/[id]`) & Appointment Booking System (`rup-chorcha-backend` `fc3b1d8` / `ef10f2b`; `rup-chorcha` `4f327dd` / `c5c69f0`)**
 4. [x] **Step 4 — Express Dashboard, Admin & Profile APIs (`Step 4A` `7405266` / `6559bd0`) & Frontend Migration (`Step 4B` `227f0ac` / `16f2644`)**
 5. [x] **Step 5 — Stripe Checkout, Verified Webhook & Payment Pages (`Step 5A` `f16a6ae` / `b57fce3`, `Step 5B` complete)**
-6. [ ] **Step 6 — Error Boundaries, Polish, Security & Manual QA** *(Next Recommended Task)*: Add root `src/app/not-found.tsx`, audit remaining loading/empty/error states, verify keyboard navigation/labels and responsive layouts across mobile/tablet/desktop, perform security & asset audit, and reach the 20+ client commit target.
-7. [ ] **Step 7 — Documentation, Commit Targets & Production Deployment**: Deploy backend (Render/Railway) and client (Vercel), configure production env vars, Stripe webhook endpoint, and Google OAuth redirect URIs, seed production admin, and verify live end-to-end flows.
+6. [x] **Step 6 — Error Boundaries, Polish, Security & Manual QA**: Added root `src/app/not-found.tsx`, `src/app/global-error.tsx`, `src/app/(root)/error.tsx`, `src/app/(auth)/error.tsx`, `src/app/services/(list)/error.tsx`, and `admin/profile/loading.tsx`; hardened HTTP response headers in `next.config.ts`; improved `--muted-foreground` & Footer WCAG AA contrast, Skip-to-main-content links, password-toggle hit areas, and mobile card word wrapping; verified `next typegen`, `tsc --noEmit`, ESLint, `next build`, `24/24` backend tests, and `8/8` Step 6 live full-stack E2E/security checks (`22` client commits / `14` server commits). *(Manual live Chrome DevTools click-through remains pending user check due to `DevToolsActivePort` `ENOENT`.)*
+7. [ ] **Step 7 — Documentation, Commit Targets & Production Deployment** *(Next Recommended Task)*: Deploy backend (Render/Railway) and client (Vercel), configure production env vars & live `STRIPE_WEBHOOK_SECRET`, update Google OAuth redirect URIs, seed production admin, update both READMEs with live URLs, and verify live end-to-end flows in a real browser.
 
 ## G. Development Rules & Lessons Learned
 
