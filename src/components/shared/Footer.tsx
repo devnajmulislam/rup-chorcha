@@ -1,14 +1,15 @@
+import Link from "next/link"
 import { Clock3, Mail, MapPin } from "lucide-react"
 
 import { Logo } from "@/components/brand/Logo"
 import { Container } from "@/components/shared/Container"
 
 const footerLinks = [
-  { label: "Home", href: "#top" },
-  { label: "Services", href: "#services" },
-  { label: "Categories", href: "#categories" },
-  { label: "Why RupChorcha", href: "#why" },
-]
+  { label: "Home", href: "/" },
+  { label: "Browse Services", href: "/services" },
+  { label: "Categories", href: "/#categories" },
+  { label: "Why RupChorcha", href: "/#why" },
+] as const
 
 function Footer() {
   return (
@@ -33,13 +34,13 @@ function Footer() {
               Explore
             </h2>
             {footerLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 className="w-fit text-sm text-ivory/75 transition-colors hover:text-ivory focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ivory/40"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 

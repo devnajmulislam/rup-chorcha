@@ -1,4 +1,6 @@
+import { Suspense } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import {
   ArrowRight,
   ArrowUpRight,
@@ -14,16 +16,19 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import { Footer } from "@/components/shared/Footer"
+import { FeaturedServicesSection } from "@/components/home/FeaturedServicesSection"
 import { Container } from "@/components/shared/Container"
 import { SectionHeading } from "@/components/shared/SectionHeading"
-import { ServiceCard } from "@/components/shared/ServiceCard"
+import { ServiceGridSkeleton } from "@/components/shared/ServiceGridSkeleton"
 import { buttonVariants } from "@/components/ui/button"
-import { demoServices } from "@/lib/demo-services"
+import type { SalonCategory } from "@/lib/constants"
+import { buildServicesHref } from "@/lib/services-query"
 import { cn } from "cn"
 
+export const dynamic = "force-dynamic"
+
 const categoryDetails: {
-  name: string
+  name: SalonCategory
   description: string
   icon: LucideIcon
 }[] = [
@@ -88,7 +93,6 @@ const whyPoints: { title: string; description: string; icon: LucideIcon }[] = [
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
-
       <main className="flex-1">
         <section id="top" className="relative scroll-mt-24 overflow-hidden">
           <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-blush/70 blur-3xl sm:size-96" />
@@ -113,16 +117,16 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <a
-                  href="#services"
+                <Link
+                  href="/services"
                   className={cn(
                     buttonVariants({ size: "lg" }),
                     "h-11 gap-2 rounded-full px-6 text-sm"
                   )}
                 >
-                  Explore services
+                  Explore salon services
                   <ArrowRight aria-hidden="true" />
-                </a>
+                </Link>
                 <a
                   href="#why"
                   className={cn(
@@ -177,23 +181,24 @@ export default function Home() {
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <SectionHeading
                 eyebrow="The menu"
-                title="Signature services"
-                description="A thoughtful edit of hair, skin, makeup, nail, and spa care, each with the time and attention it deserves."
+                title="Featured salon services"
+                description="A live edit of active hair, skin, makeup, nail, and spa care, each with the time and attention it deserves."
               />
-              <p className="max-w-xs text-sm leading-6 text-muted-foreground sm:text-right">
-                A considered selection for everyday care and special occasions.
-              </p>
+              <Link
+                href="/services"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "h-10 w-fit shrink-0 gap-2 rounded-full border-border bg-transparent px-5 text-sm text-plum hover:bg-blush"
+                )}
+              >
+                View all services
+                <ArrowRight aria-hidden="true" />
+              </Link>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {demoServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))}
-            </div>
-
-            <p className="text-xs leading-5 text-muted-foreground">
-              Service availability and final pricing are confirmed at booking.
-            </p>
+            <Suspense fallback={<ServiceGridSkeleton count={6} />}>
+              <FeaturedServicesSection />
+            </Suspense>
           </Container>
         </section>
 
@@ -205,7 +210,7 @@ export default function Home() {
             <SectionHeading
               eyebrow="Find your ritual"
               title="Care for every part of you"
-              description="From a fresh cut to a quiet hour of spa care, explore the categories that shape the RupChorcha menu."
+              description="From a fresh cut to a quiet hour of spa care, explore services by category."
             />
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -213,14 +218,15 @@ export default function Home() {
                 const Icon = category.icon
 
                 return (
-                  <div
+                  <Link
                     key={category.name}
-                    className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-ivory p-5"
+                    href={buildServicesHref({ category: category.name })}
+                    className="group/cat flex flex-col gap-4 rounded-2xl border border-border/60 bg-ivory p-5 transition-colors hover:border-rose hover:bg-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    <span className="flex size-11 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+                    <span className="flex size-11 items-center justify-center rounded-full bg-white text-primary shadow-sm transition-colors group-hover/cat:bg-blush">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-1 flex-col gap-1.5">
                       <h3 className="font-heading text-xl leading-tight font-medium text-foreground">
                         {category.name}
                       </h3>
@@ -228,7 +234,14 @@ export default function Home() {
                         {category.description}
                       </p>
                     </div>
-                  </div>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.08em] text-plum uppercase transition-colors group-hover/cat:text-primary">
+                      Explore category
+                      <ArrowRight
+                        className="size-3.5 transition-transform duration-200 group-hover/cat:translate-x-0.5 motion-reduce:transition-none"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  </Link>
                 )
               })}
             </div>
@@ -302,8 +315,8 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
-                <a
-                  href="#services"
+                <Link
+                  href="/services"
                   className={cn(
                     buttonVariants({ size: "lg" }),
                     "h-11 gap-2 rounded-full px-6 text-sm"
@@ -311,7 +324,7 @@ export default function Home() {
                 >
                   Explore services
                   <ArrowUpRight aria-hidden="true" />
-                </a>
+                </Link>
                 <a
                   href="mailto:hello@rupchorcha.com"
                   className={cn(
@@ -327,8 +340,6 @@ export default function Home() {
           </Container>
         </section>
       </main>
-
-
     </div>
   )
 }

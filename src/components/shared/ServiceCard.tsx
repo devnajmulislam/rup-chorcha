@@ -1,6 +1,7 @@
-import Image from "next/image"
-import { Clock3, ImageIcon } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, Clock3 } from "lucide-react"
 
+import { ServiceImage } from "@/components/shared/ServiceImage"
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency, formatDuration } from "@/lib/format"
 import { cn } from "cn"
@@ -24,25 +25,18 @@ function ServiceCard({ service, className }: ServiceCardProps) {
   return (
     <article
       className={cn(
-        "group/service flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_18px_40px_-32px_rgba(58,24,48,0.45)]",
+        "group/service flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_18px_40px_-32px_rgba(58,24,48,0.45)] transition-colors hover:border-rose/70",
         className
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-blush">
-        {service.image ? (
-          <Image
-            src={service.image}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition-transform duration-500 ease-out group-hover/service:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/service:scale-100"
-          />
-        ) : (
-          <span className="flex size-full items-center justify-center text-plum/50">
-            <ImageIcon className="size-8" aria-hidden="true" />
-          </span>
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-plum/45 to-transparent" />
+        <ServiceImage
+          src={service.image}
+          alt={service.serviceName}
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          className="transition-transform duration-500 ease-out group-hover/service:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/service:scale-100"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-plum/45 to-transparent" />
         <Badge
           variant="secondary"
           className="absolute top-3 left-3 border-white/30 bg-ivory/95 text-plum shadow-sm"
@@ -57,20 +51,34 @@ function ServiceCard({ service, className }: ServiceCardProps) {
             {service.serviceName}
           </h3>
           {service.description ? (
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
               {service.description}
             </p>
           ) : null}
         </div>
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">
-          <p className="font-heading text-xl font-semibold text-plum">
-            {formatCurrency(service.price)}
-          </p>
-          <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Clock3 className="size-4 text-primary" aria-hidden="true" />
-            {formatDuration(service.duration)}
-          </p>
+        <div className="mt-auto flex flex-col gap-3 border-t border-border/70 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="font-heading text-xl font-semibold text-plum">
+              {formatCurrency(service.price)}
+            </p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Clock3 className="size-4 text-primary" aria-hidden="true" />
+              {formatDuration(service.duration)}
+            </p>
+          </div>
+
+          <Link
+            href={`/services/${service.id}`}
+            prefetch={false}
+            className="inline-flex min-h-9 w-fit items-center gap-1.5 text-sm font-medium text-plum transition-colors hover:text-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            View details
+            <ArrowRight
+              className="size-4 transition-transform duration-200 group-hover/service:translate-x-0.5 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
+          </Link>
         </div>
       </div>
     </article>

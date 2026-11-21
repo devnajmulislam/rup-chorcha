@@ -1,0 +1,184 @@
+import Link from "next/link"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+} from "@/components/ui/pagination"
+import { buttonVariants } from "@/components/ui/button"
+import {
+  buildServicesHref,
+  type ServiceSortOption,
+  type ServicesPaginationMeta,
+} from "@/lib/services-query"
+import { cn } from "cn"
+
+type ServicesPaginationProps = {
+  meta: ServicesPaginationMeta
+  search: string
+  category: string
+  sort: ServiceSortOption
+}
+
+type PageSlot = number | "ellipsis-start" | "ellipsis-end"
+
+function buildPageSlots(current: number, totalPages: number): PageSlot[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const slots: PageSlot[] = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(totalPages - 1, current + 1)
+
+  if (start > 2) {
+    slots.push("ellipsis-start")
+  }
+
+  for (let pageNumber = start; pageNumber <= end; pageNumber += 1) {
+    slots.push(pageNumber)
+  }
+
+  if (end < totalPages - 1) {
+    slots.push("ellipsis-end")
+  }
+
+  slots.push(totalPages)
+  return slots
+}
+
+function ServicesPagination({
+  meta,
+  search,
+  category,
+  sort,
+}: ServicesPaginationProps) {
+  if (meta.totalPages <= 1) {
+    return null
+  }
+
+  const currentPage = Math.min(Math.max(1, meta.page), meta.totalPages)
+  const pageSlots = buildPageSlots(currentPage, meta.totalPages)
+  const prevPage = currentPage - 1
+  const nextPage = currentPage + 1
+
+  return (
+    <div className="flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-6 sm:flex-row">
+      <p className="text-sm text-muted-foreground">
+        Page <span className="font-medium text-plum">{currentPage}</span> of{" "}
+        <span className="font-medium text-plum">{meta.totalPages}</span>
+      </p>
+
+      <Pagination className="mx-0 w-auto">
+        <PaginationContent className="flex-wrap justify-center gap-1.5">
+          <PaginationItem>
+            {meta.hasPrevPage ? (
+              <Link
+                href={buildServicesHref({
+                  search,
+                  category,
+                  sort,
+                  page: prevPage,
+                })}
+                aria-label="Go to previous page"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "default" }),
+                  "h-10 gap-1.5 rounded-full border-border bg-card px-4 text-sm text-plum hover:bg-blush"
+                )}
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+                <span>Previous</span>
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "default" }),
+                  "pointer-events-none h-10 gap-1.5 rounded-full border-border/60 bg-transparent px-4 text-sm opacity-45"
+                )}
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+                <span>Previous</span>
+              </span>
+            )}
+          </PaginationItem>
+
+          {pageSlots.map((slot) => {
+            if (slot === "ellipsis-start" || slot === "ellipsis-end") {
+              return (
+                <PaginationItem key={slot}>
+                  <PaginationEllipsis className="text-muted-foreground" />
+                </PaginationItem>
+              )
+            }
+
+            const isCurrent = slot === currentPage
+
+            return (
+              <PaginationItem key={slot}>
+                <Link
+                  href={buildServicesHref({
+                    search,
+                    category,
+                    sort,
+                    page: slot,
+                  })}
+                  aria-current={isCurrent ? "page" : undefined}
+                  aria-label={`Page ${slot}`}
+                  className={cn(
+                    buttonVariants({
+                      variant: isCurrent ? "default" : "outline",
+                      size: "icon",
+                    }),
+                    "h-10 w-10 rounded-full text-sm",
+                    isCurrent
+                      ? "bg-primary text-white hover:bg-primary/90"
+                      : "border-border bg-card text-plum hover:bg-blush"
+                  )}
+                >
+                  {slot}
+                </Link>
+              </PaginationItem>
+            )
+          })}
+
+          <PaginationItem>
+            {meta.hasNextPage ? (
+              <Link
+                href={buildServicesHref({
+                  search,
+                  category,
+                  sort,
+                  page: nextPage,
+                })}
+                aria-label="Go to next page"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "default" }),
+                  "h-10 gap-1.5 rounded-full border-border bg-card px-4 text-sm text-plum hover:bg-blush"
+                )}
+              >
+                <span>Next</span>
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "default" }),
+                  "pointer-events-none h-10 gap-1.5 rounded-full border-border/60 bg-transparent px-4 text-sm opacity-45"
+                )}
+              >
+                <span>Next</span>
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </span>
+            )}
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  )
+}
+
+export { ServicesPagination }
