@@ -1,6 +1,6 @@
-# RupChorcha — Frontend Client & Same-Origin BFF
+# RupChorcha - Frontend Client & Same-Origin BFF
 
-Frontend web application and same-origin Backend-for-Frontend (BFF) for **RupChorcha** (*Beauty, Elegance & Confidence*), a full-stack salon appointment booking and payment platform (`Assignment 9 - Category 002`).
+Frontend web application and same-origin Backend-for-Frontend (BFF) for **RupChorcha** (*Beauty, Elegance & Confidence*), a full-stack salon appointment booking and payment platform.
 
 ## Project Overview
 
