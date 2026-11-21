@@ -606,59 +606,59 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 #### Backend
 
-- [ ] Confirm Node.js 20 or newer.
-- [ ] Verify Better Auth compatibility with the installed `mongodb` driver version.
-- [ ] Install backend dependencies: `better-auth`, `stripe`, `multer`, `jose`, `zod`, `express-rate-limit`, `helmet`, `cookie-parser`.
-- [ ] Add scripts: `dev` using `node --watch`, `start`, and `seed:admin`.
-- [ ] Create `.env` locally and `.env.example` with names only.
-- [ ] Create the backend folder structure: config, db, lib, middleware, modules, routes, scripts, utils.
-- [ ] Connect to MongoDB and export the database plus the `services`, `appointments`, and `transactions` collections.
-- [ ] Add index creation for all collections, including the per-customer slot index.
-- [ ] Add Helmet, CORS allowlist, global rate limiter, JSON parser, cookie parser, 404 handler, and central error handler.
-- [ ] Add the health endpoint.
-- [ ] Add the backend README with project name, description, features, stack, installation, run instructions, env names, and repository link.
-- [ ] Acceptance: `GET /api/health` returns success; unknown routes return JSON 404; the client origin is allowed; no secrets are committed.
-- [ ] Commit: `chore(server): scaffold express foundation, mongo connection, health and error handling`.
+- [x] Confirm Node.js 20 or newer (`v24.18.0`).
+- [x] Verify Better Auth compatibility with the installed `mongodb` driver version (`mongodb` `7.9.0`, `better-auth` `1.7.27`, `@better-auth/mongo-adapter` `1.7.27`).
+- [~] Install backend dependencies: `better-auth`, `jose`, `zod`, `express-rate-limit`, `helmet`, `cookie-parser` installed in Part A/B (`stripe` and `multer` deferred to Phases 2 & 5).
+- [x] Add scripts: `dev` using `node --watch`, `start`, and `seed:admin`.
+- [x] Create `.env` locally and `.env.example` with names only.
+- [x] Create the backend folder structure: config, db, lib, middleware, routes, scripts, utils (`modules` deferred to Step 2+).
+- [x] Connect to MongoDB and export the database plus the `services`, `appointments`, and `transactions` collections.
+- [x] Add index creation for all collections, including the per-customer slot index.
+- [x] Add Helmet, CORS allowlist, global rate limiter, JSON parser, cookie parser, 404 handler, and central error handler.
+- [x] Add the health endpoint (`GET /api/health`).
+- [x] Add the backend README with project name, description, features, stack, installation, run instructions, env names, and repository link.
+- [x] Acceptance: `GET /api/health` returns success; unknown routes return JSON 404; the client origin is allowed; no secrets are committed.
+- [x] Commit: `0b2c6eb` (`chore(server): scaffold express foundation, mongo connection, health and error handling`).
 
 #### Client
 
-- [ ] Update metadata, logo text, and branding to RupChorcha.
-- [ ] Update theme tokens and fonts for a professional salon look.
-- [ ] Add a client Providers component and mount the toaster.
-- [ ] Create `.env.local` locally and `.env.example` with names only.
-- [ ] Add the server-only API client, BFF route skeletons, shared types, constants, and validators.
-- [ ] Configure `next.config.ts` image remote patterns for ImgBB and Google avatars.
+- [x] Update metadata, logo text, and branding to RupChorcha.
+- [x] Update theme tokens and fonts for a professional salon look.
+- [x] Add a client Providers component and mount the toaster.
+- [~] Create `.env` locally and `.env.example` with names only (synchronized in `.env.example`; uses `.env` rather than `.env.local`).
+- [~] Add the server-only auth/BFF helpers, auth BFF routes, shared types, constants, and auth validators (business `/api/backend/*` client deferred to Steps 2–4).
+- [x] Configure `next.config.ts` image remote patterns for ImgBB and Google avatars.
 - [ ] Add the client README with the required sections.
-- [ ] Acceptance: `npm run dev` works; the home page shows RupChorcha; no console errors; the toaster renders.
+- [~] Acceptance: `npm run build` / `npm run dev` work and toaster renders (home page still uses `demoServices` until Step 2).
 - [ ] Commit: `chore(client): establish RupChorcha theme, providers, and app foundation`.
 
 ### Phase 1 — Authentication
 
 #### Backend
 
-- [ ] Configure Better Auth with the MongoDB adapter.
-- [ ] Add email/password and Google providers.
-- [ ] Add `role`, `isBlocked`, and `phone` additional fields; protect `role` and `isBlocked` from client input.
-- [ ] Enforce password rules on sign-up.
-- [ ] Add a session hook that rejects blocked users.
-- [ ] Enable the JWT plugin or implement the fallback JWT issuer.
-- [ ] Mount the Better Auth handler.
-- [ ] Add JWT verification, role, blocked-user, and ownership middleware.
-- [ ] Add the admin seed script.
-- [ ] Test sign-up, sign-in, Google, blocked user, admin role, and JWT-protected endpoints.
-- [ ] Acceptance: customers and admins receive correct roles; blocked users are rejected; no client can create an admin through registration.
-- [ ] Commit: `feat(server): add better auth, jwt verification, role guards, and admin seeding`.
+- [x] Configure Better Auth with the MongoDB adapter.
+- [x] Add email/password and Google providers.
+- [x] Add `role`, `isBlocked`, and `phone` additional fields; protect `role` and `isBlocked` from client input.
+- [x] Enforce password rules on sign-up.
+- [x] Add a session hook that rejects blocked users.
+- [x] Implement the HS256 JWT issuer/verifier (`jose`) via `POST /api/jwt/token` and `GET /api/jwt/me`.
+- [x] Mount the Better Auth handler (`/api/auth/*splat`).
+- [x] Add JWT verification, role, and blocked-user middleware (`requireAuth`, `requireNotBlocked`, `requireRole`, `protect`; resource ownership middleware deferred to Steps 3–4).
+- [x] Add the admin seed script (`npm run seed:admin`).
+- [~] Test sign-up, sign-in, Google initiation, blocked user, admin role, and JWT-protected endpoints (interactive Google consent requires manual browser verification).
+- [x] Acceptance: customers and admins receive correct roles; blocked users are rejected; no client can create an admin through registration.
+- [x] Commit: `5a961b2` (`feat(server): add better auth, jose jwt verification, role guards, and admin seed script`).
 
 #### Client
 
-- [ ] Add the Better Auth client and the auth BFF proxy.
-- [ ] Build the sign-up page with password rules and image URL support.
-- [ ] Build the sign-in page with email/password and Google.
-- [ ] Build the auth-aware navbar, profile dropdown, mobile sheet, and sign-out.
-- [ ] Add auth redirects and the protected dashboard layout foundation.
-- [ ] Test refresh persistence, role redirects, blocked users, and sign-out.
-- [ ] Acceptance: navbar updates immediately after auth changes; private routes survive refresh; role mismatch cannot open the other dashboard.
-- [ ] Commit: `feat(client): add better auth pages, session-aware navbar, and route guards`.
+- [x] Add the same-origin auth BFF routes (`/api/auth/*`) and client session provider (`src/lib/auth-client.ts`).
+- [x] Build the sign-up page with password rules and image URL support.
+- [x] Build the sign-in page with email/password and Google initiation.
+- [x] Build the auth-aware navbar, profile dropdown, mobile sheet, and sign-out connected to the BFF.
+- [x] Add auth redirects (`?redirect=` sanitized), Next.js 16 `src/proxy.ts`, and server-side protected dashboard layouts/guards (`src/lib/session.ts`).
+- [~] Test refresh persistence, role redirects, blocked users, and sign-out (all verified via live E2E HTTP/cookie/SSR integration suite; live Chrome DevTools click-through could not run because remote debugging was not active).
+- [x] Acceptance (server/API/SSR verified): session persists via HttpOnly cookies; private routes survive refresh; role mismatch cannot open the other dashboard.
+- [x] Commit: `8e713d8` (`feat(client): add same-origin auth BFF, session integration, and server route guards`).
 
 ### Phase 2 — Services
 
@@ -798,42 +798,42 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 The assignment requires at least 20 meaningful client commits and 12 meaningful server commits.
 
-### Client — target 20+, current 2
+### Client — target 20+, current 10
 
-- [ ] Theme, fonts, providers, toaster
-- [ ] Public layout, navbar, footer
-- [ ] Home hero and featured services
-- [ ] Home categories and extra section
-- [ ] Shared service card and status badges
+- [x] Theme, fonts, providers, toaster
+- [x] Public layout, navbar, footer (initial build; Footer/CTA/Home updates pending Step 2)
+- [~] Home hero and featured services (uses `demoServices` until Step 2)
+- [~] Home categories and extra section (non-interactive categories until Step 2)
+- [~] Shared service card and status badges (details link pending Step 2)
 - [ ] Browse search, filter, and sort
 - [ ] Service details page
 - [ ] Booking form and dialog
-- [ ] Auth client and sign-up
-- [ ] Sign-in and Google auth
-- [ ] Route guards and role redirects
-- [ ] Customer dashboard layout and overview
-- [ ] Customer appointments list and detail
-- [ ] Customer cancel flow
+- [x] Auth client, BFF routes, and sign-up
+- [x] Sign-in and Google OAuth BFF initiation/callback
+- [x] Route guards (`src/proxy.ts`, `src/lib/session.ts`) and role redirects
+- [~] Customer dashboard layout and overview (auth/BFF wired; data queries migrate in Step 4)
+- [~] Customer appointments list and detail (data queries migrate in Step 3–4)
+- [~] Customer cancel flow (migrates in Step 3–4)
 - [ ] Pay Now and checkout redirect
 - [ ] Payment success and cancel pages
 - [ ] Customer payment history
-- [ ] Profile management
-- [ ] Admin dashboard layout and overview
-- [ ] Admin services table
-- [ ] Add/edit service and image upload
-- [ ] Admin appointment management
-- [ ] Admin user management
-- [ ] Admin transactions
+- [~] Profile management (auth BFF `/api/auth/profile` wired; ImgBB profile upload in Step 4)
+- [~] Admin dashboard layout and overview (auth/BFF wired; data queries migrate in Step 4)
+- [~] Admin services table (migrates in Step 2–4)
+- [~] Add/edit service and image upload (migrates in Step 2)
+- [~] Admin appointment management (migrates in Step 4)
+- [~] Admin user management (migrates in Step 4)
+- [~] Admin transactions (migrates in Step 5)
 - [ ] Responsive, loading, error, and empty-state polish
-- [ ] README and env example
+- [ ] README and env example (frontend `.env.example` synchronized; `README.md` pending Step 7)
 
-### Server — target 12+, current 1
+### Server — target 12+, current 4
 
-- [ ] Express foundation, env, health, error handling
-- [ ] MongoDB connection, collections, and indexes
-- [ ] Better Auth configuration
-- [ ] Admin seed script
-- [ ] JWT, role, and blocked-user middleware
+- [x] Express foundation, env, health, error handling
+- [x] MongoDB connection, collections, and indexes
+- [x] Better Auth configuration
+- [x] Admin seed script
+- [x] JWT, role, and blocked-user middleware
 - [ ] ImgBB uploads
 - [ ] Service CRUD APIs
 - [ ] Public service search, filter, and sort
@@ -857,16 +857,16 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 
 ### Authentication
 
-- [ ] Sign-up works with valid fields.
-- [ ] Password shorter than 6, without uppercase, or without lowercase is rejected.
-- [ ] Duplicate email shows a useful error.
-- [ ] Google sign-in works.
-- [ ] Customer and admin redirect to the correct dashboard.
-- [ ] Blocked user cannot sign in.
-- [ ] Blocked user cannot use protected APIs.
-- [ ] Admin cannot be created from public registration.
-- [ ] Session survives page refresh.
-- [ ] Sign-out clears the session and updates the navbar.
+- [x] Sign-up works with valid fields (verified via `POST /api/auth/register` E2E test).
+- [x] Password shorter than 6, without uppercase, or without lowercase is rejected (verified by Zod BFF & Express Better Auth hooks).
+- [x] Duplicate email shows a useful error (verified `409 USER_ALREADY_EXISTS`).
+- [~] Google sign-in works (`GET /api/auth/providers`, `POST /api/auth/google`, and `GET /api/auth/callback/google` verified; full interactive Google consent requires manual browser login).
+- [x] Customer and admin redirect to the correct dashboard (verified via SSR + E2E redirects).
+- [x] Blocked user cannot sign in (verified `403 USER_BLOCKED` + `/sign-in?blocked=1`).
+- [x] Blocked user cannot use protected APIs (verified live DB `isBlocked` check on `/api/jwt/me`, `/api/auth/me`, `/api/auth/session`, `/customer`).
+- [x] Admin cannot be created from public registration (verified injected `role: "admin"` forced to `"customer"`).
+- [x] Session survives page refresh (verified repeated SSR requests with HttpOnly cookies).
+- [~] Sign-out clears the session and updates the navbar (`POST /api/auth/logout` verified clearing cookies + invalidating Express Better Auth DB session; live Chrome UI visual check pending manual verification).
 
 ### Services
 
@@ -927,12 +927,12 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 
 ## 14. Security checklist
 
-- [ ] All secrets are in environment variables.
-- [ ] `.env` files are gitignored in both repositories.
-- [ ] `role` and `isBlocked` are server-controlled and cannot be changed by clients.
-- [ ] Every protected API verifies JWT, role, blocked status, and ownership.
-- [ ] Admin endpoints reject customers.
-- [ ] Customer endpoints reject admins where required.
+- [x] All secrets are in environment variables.
+- [x] `.env` files are gitignored in both repositories.
+- [x] `role` and `isBlocked` are server-controlled and cannot be changed by clients.
+- [ ] Every protected API verifies JWT, role, blocked status, and ownership (verified on Express `/api/jwt/*` and Next.js auth BFF; business REST routes pending Steps 2–5).
+- [ ] Admin endpoints reject customers (verified on `/admin*` pages and `/api/jwt/admin-check`; business APIs pending Steps 2–5).
+- [ ] Customer endpoints reject admins where required (verified on `/customer*` pages and `/api/jwt/customer-check`; business APIs pending Steps 2–5).
 - [ ] Service price and appointment price are server-derived, never trusted from the client.
 - [ ] Payment status is set only by the verified Stripe webhook.
 - [ ] Stripe webhook uses a raw body and signature verification.
@@ -940,12 +940,12 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 - [ ] File uploads validate MIME type and size.
 - [ ] Search input is escaped and length-limited.
 - [ ] Request bodies are validated and do not pass raw objects into MongoDB queries.
-- [ ] Auth, checkout, and upload routes are rate-limited.
-- [ ] CORS uses an explicit origin allowlist with credentials.
-- [ ] Cookies are httpOnly and secure in production.
-- [ ] No stack traces or secrets are exposed in production errors.
-- [ ] No sensitive data is logged.
-- [ ] Admin seeding is a server-side script, not a public endpoint.
+- [~] Auth, checkout, and upload routes are rate-limited (`/api/auth` and `/api` rate-limited on Express; checkout & upload routes pending Steps 2 & 5).
+- [x] CORS uses an explicit origin allowlist with credentials (and BFF enforces same-origin CSRF verification).
+- [x] Cookies are httpOnly and secure in production (`HttpOnly`, `SameSite=Lax`, `Path=/`, HTTPS-aware `Secure`).
+- [x] No stack traces or secrets are exposed in production errors.
+- [x] No sensitive data is logged.
+- [x] Admin seeding is a server-side script, not a public endpoint.
 
 ---
 
@@ -987,3 +987,178 @@ These do not block Phase 0 but must be resolved before the related phase:
 - Backend database access: native `mongodb` driver is assumed; do not add Mongoose unless a concrete blocker appears.
 
 Update this file whenever one of these assumptions changes.
+
+---
+
+# Project Status & Development Roadmap
+
+> Last updated: 2026-11-21 (Step 1 — Part A, Part B, and Part C Stage 1 completed and verified; Step 2 Services APIs & Public Pages is next).
+>
+> Checkbox legend:
+> - `[x]` Completed and verified
+> - `[ ]` Not completed
+> - `[~]` Partially completed
+> - `[?]` Needs manual verification
+
+## A. Completed Work
+
+### Step 1 — Part A: Express Backend Foundation (`rup-chorcha-backend`, commit `0b2c6eb`)
+
+- [x] Separate Express 5 ESM backend structure (`config/`, `db/`, `lib/`, `middleware/`, `routes/`, `scripts/`, `utils/`) connected to MongoDB (`rup-chorcha` database) via the native `mongodb` driver.
+- [x] Security and request middleware stack: Helmet, explicit CORS allowlist with credentials, global rate limiting, cookie parser, JSON parsing, central error handler, and JSON 404 handler.
+- [x] `GET /api/health` endpoint and MongoDB index bootstrap.
+- [x] Backend `README.md` and `.env.example` synchronized.
+
+### Step 1 — Part B: Express Authentication & Authorization (`rup-chorcha-backend`, commit `5a961b2`)
+
+- [x] Better Auth mounted on Express (`/api/auth/*splat`, `useSecureCookies: env.isProduction`, `sameSite: "lax"`) backed by MongoDB adapter (`user`, `session`, `account`, `verification`).
+- [x] Role and block enforcement: server-owned `role` (`customer` / `admin`) and `isBlocked` fields, `seed:admin` script, and Express middleware `requireAuth`, `requireNotBlocked`, and `requireRole`.
+- [x] `jose` HS256 JWT bridge routes (`POST /api/jwt/token` with 15m TTL, `GET /api/jwt/me` performing live MongoDB `findUserById` + `isBlocked` check, and `GET /api/jwt/providers`).
+
+### Step 1 — Part C, Stage 1: Next.js Same-Origin Auth BFF & Session Integration (`rup-chorcha`)
+
+- [x] Removed the duplicate Next.js Better Auth server (`src/app/api/auth/[...all]/route.ts`) and migrated auth/session flows to the Express backend via a same-origin Next.js BFF.
+- [x] Implemented server-only Express BFF client and session resolution (`src/lib/auth.ts`, `src/lib/auth-bff.ts`, `src/lib/session.ts`) with React `cache()`-memoized `getServerSession()`, `requireSession()`, `requireRole()`, and `BackendUnavailableError`.
+- [x] Implemented 10 Next.js BFF route handlers under `src/app/api/auth/*`: `register`, `login`, `logout`, `session`, `me`, `providers`, `google`, `callback/[provider]`, `profile`, and `error`.
+- [x] Added Zod v4 request validation (`src/lib/auth-validators.ts`) enforcing registration password rules, URL safety, nullable/optional `image`/`phone` handling, and server-side stripping of `role`, `isBlocked`, and `email` on profile updates.
+- [x] Hardened redirects and CSRF protection: `sanitizeRedirectPath()`, `isPathAllowedForRole()`, and `resolvePostAuthDestination()` in `src/lib/roles.ts`, same-origin `Origin`/`Referer`/`Sec-Fetch-Site` CSRF validation in `verifySameOriginCsrf()`, and `NEXT_PUBLIC_APP_URL`-anchored `getAppOrigin()` ignoring forged `x-forwarded-host`/`host` headers.
+- [x] Replaced `better-auth/react` client with same-origin `AuthSessionProvider` and `useAuthSession()` (`src/lib/auth-client.ts`), cross-tab `BroadcastChannel("rupchorcha-auth")` sync, and zero `localStorage`/`sessionStorage` token storage.
+- [x] Added Next.js 16 `src/proxy.ts` optimistic cookie check on `/customer/:path*`, `/admin/:path*`, `/dashboard/:path*`, paired with server-side route verification and Next.js 16 `error.tsx` boundaries (`{ error, retry }`) in `src/app/error.tsx` and `src/app/(dashboard)/error.tsx`.
+- [x] Connected `SignInForm`, `SignUpForm`, `AuthContinue`, `Navbar`, `DashboardSidebar`, `ProfileForm`, auth pages, and `src/app/api/admin/uploads/service-image/route.ts` to the new BFF session/auth flow while preserving the RupChorcha dashboard UI.
+
+## B. Current Project Status
+
+### Implemented Functionality
+
+- **Backend (`rup-chorcha-backend`, latest commit `5a961b2`):** Express foundation, MongoDB connection and indexes, security middleware, Better Auth email/password + Google OAuth support, admin seed script, `jose` HS256 JWT issuance/verification (`/api/jwt/*`), and `requireAuth`/`requireNotBlocked`/`requireRole` guards are implemented.
+- **Frontend Auth & Session Integration (`rup-chorcha`):** Same-origin Next.js BFF routes (`/api/auth/*`), `HttpOnly` cookie and HS256 JWT handling (`rc_access_token`), server-side route guards on `/customer/*`, `/admin/*`, and `/dashboard/*`, cross-tab navbar/sidebar session sync, profile update BFF proxy, and Next.js 16 `proxy.ts` + `error.tsx` boundaries are implemented and verified.
+- **Preserved Existing Frontend UI (pending Step 2–4 API migration):** RupChorcha branding, design system, public home/services shells, and customer/admin dashboard UI pages remain intact.
+
+### Incomplete Functionality (Out of Stage 1 Scope)
+
+- Express REST APIs for services (`/api/services*`, `/api/admin/services*`), ImgBB uploads on Express, appointments (`/api/appointments*`, `/api/admin/appointments*`), dashboard aggregations, admin users/transactions, and Express `/api/profile` business routes are not yet built.
+- Public home (`/`) live data integration, `/services` search/filter/sort/pagination, protected `/services/[id]` appointment booking, Stripe Checkout + raw-body webhooks + `/payment/*` pages, and migrating dashboard business queries (`src/lib/db.ts`, `src/lib/services.ts`, `src/lib/appointments.ts`, `src/lib/admin.ts`) off direct Next.js MongoDB access remain pending for Steps 2–5.
+- Production deployment, full `README.md` updates in `rup-chorcha`, and repository commit-count targets remain pending for Steps 6–7.
+
+### Known Issues & Limitations
+
+- **Interactive Browser & Google OAuth Consent Not Tested Automatically:** `chrome_devtools` MCP failed to connect (`ENOENT` on `DevToolsActivePort` in the local Chrome profile), and live Google OAuth credentials/interactive Google consent were not exercised in a browser. Google OAuth initiation (`200`), state-cookie forwarding, forged host rejection, and `/api/auth/error` callback translation were verified via HTTP integration tests.
+- **Stateless JWT Window on Logout:** Logout calls Express `/api/auth/sign-out` (deleting the MongoDB `session` record) and clears `rc_access_token` plus all Better Auth cookies in the browser, but the stateless 15-minute HS256 JWT has no server-side JTI revocation blocklist if exfiltrated before logout. Blocked status (`isBlocked`) is checked live in MongoDB on every `/api/jwt/me` and `/api/jwt/token` call.
+- **Temporary Direct Env Vars in Next.js:** `MONGODB_URI`, `MONGODB_DB_NAME`, and `IMGBB_API_KEY` remain temporarily configured in `rup-chorcha` for existing Steps 2–4 UI modules (`src/lib/db.ts` and `src/app/api/admin/uploads/service-image/route.ts`) until those features migrate to the Express backend in Steps 2–4. Never expose these via `NEXT_PUBLIC_*`.
+- **Pre-existing Lint Warning:** `npm run lint` reports 1 pre-existing unused-import warning (`Footer` in `src/app/(root)/page.tsx`), outside Stage 1 scope.
+
+## C. Architecture
+
+### Authentication & Session Flow
+
+```text
+Browser
+  -> Same-origin Next.js BFF (/api/auth/*)
+       -> Express Backend (/api/auth/*splat + /api/jwt/*)
+            -> MongoDB Atlas (user, session, account, verification)
+
+Server Components / Route Guards
+  -> getServerSession() [React cache()]
+       -> Express GET /api/jwt/me (Bearer rc_access_token + live DB user/isBlocked check)
+       -> Fallback refresh on TOKEN_EXPIRED only when valid Better Auth session cookie exists
+```
+
+### Next.js Same-Origin BFF Routes (`/api/auth/*`)
+
+| Route | Methods | Responsibility |
+|---|---|---|
+| `/api/auth/register` | `POST` | CSRF check, Zod `registerSchema` validation, forces `customer` role via Express `/api/auth/sign-up/email`, exchanges `/api/jwt/token`, sets auth cookies (`201`) |
+| `/api/auth/login` | `POST` | CSRF check, Zod `loginSchema` validation, calls Express `/api/auth/sign-in/email`, handles blocked-user rejection, sets session + `rc_access_token` (`200`) |
+| `/api/auth/logout` | `POST` | CSRF check, forwards cookies to Express `/api/auth/sign-out` to delete server session, clears `rc_access_token` and all Better Auth cookies |
+| `/api/auth/session` | `GET` | Non-strict current session check returning `{ authenticated, user }`; refreshes expired JWT when session cookie is valid; clears cookies on `USER_BLOCKED` (`403`); returns `503` if backend unavailable |
+| `/api/auth/me` | `GET` | Strict current user lookup (`401` unauthenticated, `403` blocked, `503` backend unavailable, `200` authenticated) |
+| `/api/auth/providers` | `GET` | Proxies Express `/api/jwt/providers` for Google OAuth availability |
+| `/api/auth/google` | `POST`, `GET` | Initiates Google OAuth via Express `/api/auth/sign-in/social` (CSRF-checked on `POST`, Zod-validated callback target, forwards `better-auth.state` cookie) |
+| `/api/auth/callback/[provider]` | `GET`, `POST` | Proxies Express `/api/auth/callback/google` with `redirect: "manual"`, sets cookies + exchanges JWT, clears cookies on `USER_BLOCKED`, translates `/api/auth/error` safely to `/sign-in?error=...`, enforces same-origin `Location` |
+| `/api/auth/profile` | `PATCH`, `POST` | CSRF + live Express session verification, Zod `profileUpdateSchema` (strips `role`, `isBlocked`, `email`), proxies Express `/api/auth/update-user`, refreshes JWT |
+| `/api/auth/error` | `GET` | Safely redirects auth error parameters to `/sign-in` |
+
+### Cookie, JWT & Security Controls
+
+- **Cookie handling:** Auth cookies (`rc_access_token` 15m HS256 JWT + Better Auth session cookies) are `HttpOnly`, `SameSite=Lax`, `Path=/`, with `Secure` enabled in HTTPS/production contexts. Zero tokens are stored in `localStorage` or `sessionStorage`.
+- **Fail-closed JWT behavior:** Expired JWTs (`TOKEN_EXPIRED`) refresh silently only if Express validates the accompanying Better Auth session cookie; tampered or signature-invalid JWTs fail closed (`401`) without refreshing.
+- **CSRF protection:** Cookie-authenticated BFF mutations (`POST`, `PATCH`) enforce `verifySameOriginCsrf()` using `Sec-Fetch-Site` and `Origin`/`Referer` allowlists.
+- **Open redirect & origin protection:** `getAppOrigin()` prefers `NEXT_PUBLIC_APP_URL` and falls back to `request.url` origin, ignoring untrusted `x-forwarded-host` / `host` headers; `sanitizeRedirectPath()` rejects `//`, `\`, schemes, control characters, and auth paths.
+- **Server route guards:** `src/proxy.ts` provides an optimistic cookie-presence redirect only (`/customer/*`, `/admin/*`, `/dashboard/*`); real authorization runs server-side via `requireSession()` / `requireRole()` calling Express `/api/jwt/me` (live MongoDB user, role, and `isBlocked` check). `src/app/api/admin/uploads/service-image/route.ts` uses server-verified admin session checks.
+
+## D. Environment Variables
+
+Never write actual secret values into `AGENTS.md`, READMEs, or client code. Keep `.env.example` synchronized in each repo.
+
+### Frontend (`rup-chorcha/.env` & `.env.example`)
+
+| Variable | Visibility | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_APP_URL` | Public / Client+Server | Canonical Next.js origin (`http://localhost:3000` locally) used by `getAppOrigin()`, CSRF checks, and same-origin BFF URLs |
+| `API_URL` | Server-only | Base URL of the Express backend (`http://localhost:5000` locally) used exclusively by Next.js server components and BFF handlers |
+| `MONGODB_URI` | Server-only (temporary) | Direct MongoDB Atlas URI used only by legacy Steps 2–4 UI modules until migrated to Express |
+| `MONGODB_DB_NAME` | Server-only (temporary) | Target database name (`rup-chorcha`) for legacy direct queries |
+| `IMGBB_API_KEY` | Server-only (temporary) | ImgBB upload key used by Next.js `/api/admin/uploads/service-image` until Step 2 moves uploads to Express |
+
+### Backend (`rup-chorcha-backend/.env` & `.env.example`)
+
+| Variable | Visibility | Purpose |
+|---|---|---|
+| `PORT` | Server-only | Express listening port (`5000` locally) |
+| `NODE_ENV` | Server-only | Runtime environment (`development` / `production`) driving `useSecureCookies` and error verbosity |
+| `CLIENT_URL` | Server-only | Comma-separated allowed browser origins for CORS (`http://localhost:3000` locally) |
+| `MONGODB_URI` | Server-only | MongoDB Atlas connection string |
+| `MONGODB_DB_NAME` | Server-only | Target MongoDB database name (`rup-chorcha`) |
+| `BETTER_AUTH_SECRET` | Server-only | Secret key used by Better Auth for session/state signing |
+| `BETTER_AUTH_URL` | Server-only | Canonical Better Auth base URL (`http://localhost:5000` locally) |
+| `JWT_SECRET` | Server-only | HS256 signing secret for Express JWT issuance & verification (`jose`) |
+| `JWT_EXPIRES_IN` | Server-only | Access JWT lifetime (`15m`) |
+| `JWT_ISSUER` | Server-only | Expected JWT `iss` claim (`rup-chorcha-api`) |
+| `JWT_AUDIENCE` | Server-only | Expected JWT `aud` claim (`rup-chorcha-client`) |
+| `GOOGLE_CLIENT_ID` | Server-only | Google OAuth client ID configured on Express Better Auth |
+| `GOOGLE_CLIENT_SECRET` | Server-only | Google OAuth client secret configured on Express Better Auth |
+| `ADMIN_EMAIL` | Server-only (seed) | Admin email consumed by `seed:admin` script |
+| `ADMIN_PASSWORD` | Server-only (seed) | Admin password consumed by `seed:admin` script |
+| `ADMIN_NAME` | Server-only (seed) | Admin display name consumed by `seed:admin` script (`RupChorcha Admin`) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CURRENCY` | Server-only (Phase 5) | Reserved in `.env.example` for Step 5 Stripe Checkout & webhooks |
+| `IMGBB_API_KEY`, `MAX_UPLOAD_MB` | Server-only (Phase 2) | Reserved in `.env.example` for Step 2 Express ImgBB uploads |
+
+## E. Executed Tests & Verification Results
+
+- **Static Checks & Production Build (`rup-chorcha`):**
+  - `node ./node_modules/next/dist/bin/next typegen` -> exit `0`.
+  - `node ./node_modules/typescript/bin/tsc --noEmit` -> exit `0`, 0 errors.
+  - `npm.cmd run lint` -> exit `0`, 0 errors (1 pre-existing unused-import warning in `src/app/(root)/page.tsx`).
+  - `npm.cmd run build` -> exit `0`, 30/30 routes built plus `Proxy (Middleware)` (`src/proxy.ts`).
+- **Live Frontend + Backend Integration Suite (`verify-auth-e2e.mjs full`, against Next.js `:3000` + Express `:5000`):** `10/10` scenarios passed:
+  1. Express health & BFF `/api/auth/providers`.
+  2. Weak password registration rejected (`400`).
+  3. Customer registration (`201`) forces `role: "customer"` with `HttpOnly`, `SameSite=Lax`, `Path=/` cookies.
+  4. Duplicate email registration rejected (`409`).
+  5. Unauthenticated `/customer*`, `/admin*`, `/dashboard` redirect to `/sign-in?redirect=...`, and `/api/auth/me` returns `401`.
+  6. Customer accesses `/customer` (`200`), survives refresh (`200`), profile `PATCH` role/block/email tampering ignored, and `/admin`, `/admin/users`, `/dashboard` redirect to `/customer`.
+  7. Admin login (`200`), `/admin*` access (`200`), `/customer` redirects to `/admin`, logout clears cookies and revokes Express DB session (`401` on cookie replay).
+  8. Blocked customer: live JWT immediately rejected (`403 USER_BLOCKED`), `/customer` redirects to `/sign-in?blocked=1`, blocked page renders banner, fresh login rejected (`403`).
+  9. Tampered JWT fails closed (`401`, no refresh); expired JWT without session fails (`401`/redirect); expired JWT with valid session cookie refreshes transparently (`200`).
+  10. Cross-origin CSRF `POST` (`Origin` mismatch / `Sec-Fetch-Site: cross-site`) rejected (`403`), Google OAuth initiation (`200`), callback forged `X-Forwarded-Host` ignored, backend `/api/auth/error` redirect translated safely to `/sign-in`.
+- **Live Backend-Unavailable Test (`verify-auth-e2e.mjs backend-down`, against production `next start -p 3055` with unreachable `API_URL`):** `8/8` checks passed (clean `503` BFF responses and `BackendUnavailableError` boundary handling without crashing).
+- **Not Verified Automatically:** Interactive Chrome UI click-through (`chrome_devtools` MCP unavailable) and end-to-end Google OAuth browser consent flow (requires manual browser verification with valid Google OAuth client/test account).
+
+## F. Development Roadmap
+
+1. [x] **Step 1 — Express Foundation, DB Indexes, Better Auth/JWT & Same-Origin Next.js Auth BFF (`Part A` `0b2c6eb`, `Part B` `5a961b2`, `Part C Stage 1`)**
+2. [ ] **Step 2 — Services APIs & Public Pages** *(Next Recommended Task)*: Implement Express `/api/services*`, `/api/admin/services*`, and `/api/admin/uploads/service-image`; update `/` with >=6 live active services, `/services` search/category/price sort/pagination/`loading.tsx`, clickable categories, Footer fixes, and `/sign-in` / `/sign-up` shared layout polish.
+3. [ ] **Step 3 — Protected Service Details (`/services/[id]`) & Appointment Booking System**: Implement Express service availability and `POST /api/appointments` / `/api/appointments/my*` APIs + `/services/[id]` customer booking flow.
+4. [ ] **Step 4 — Express Dashboard, Admin & Profile APIs + Frontend Migration**: Implement Express `/api/dashboard/*`, `/api/admin/appointments*`, `/api/admin/users*`, `/api/profile`, `/api/uploads/profile-image`, and migrate remaining client direct-MongoDB queries/actions (`src/lib/db.ts`, `services.ts`, `appointments.ts`, `admin.ts`) to Express + `/api/backend/*` BFF.
+5. [ ] **Step 5 — Stripe Checkout, Verified Webhook & Payment Pages**: Implement Stripe Checkout, idempotent raw-body webhook, transaction APIs, `/payment/success`, and `/payment/cancel`.
+6. [ ] **Step 6 — Error Boundaries, Polish, Security & Manual QA**: Add `src/app/not-found.tsx`, missing loading skeletons, clean ESLint warnings/unused assets, and run full manual responsive/accessibility/security QA.
+7. [ ] **Step 7 — Documentation, Commit Targets & Production Deployment**: Complete both `README.md` files, verify >=20 client & >=12 server commits, deploy client (Vercel) and backend (Render/Railway), configure production Stripe/OAuth, and verify live refresh/reload.
+
+## G. Development Rules & Lessons Learned
+
+- **Preserve all permanent RupChorcha rules:** Never alter existing UI design system tokens, never store secrets in client files or `.env.example`, never trust client-supplied `role`, `isBlocked`, or redirect hosts, and maintain strict separation between `rup-chorcha` and `rup-chorcha-backend`.
+- **Zod v4 ordering trap:** In Zod v4, call `.optional()` *after* `.nullable()` / `z.union([..., z.null()])` rather than before, so optional empty/null fields validate consistently.
+- **Better Auth OAuth error translation:** Express Better Auth callback errors redirect to backend `/api/auth/error`; always intercept redirects manually in the Next.js callback BFF (`redirect: "manual"`) and map error query parameters safely onto same-origin `/sign-in?error=...`.
+- **Next.js 16 conventions verified here:** Use `src/proxy.ts` (`proxy` export, not `middleware.ts`), handle async `cookies()`/`headers()`/`params`, and use `{ error, retry }` in Client Component `error.tsx` files.
+- **Windows / Sandbox verification rules:** Run `node ./node_modules/typescript/bin/tsc --noEmit` and `npm.cmd run lint` instead of `npx` under restricted PowerShell policy, and run `npm.cmd run build` outside the network sandbox when `next/font/google` fetches fonts.
+
