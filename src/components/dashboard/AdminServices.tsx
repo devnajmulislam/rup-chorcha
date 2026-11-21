@@ -401,7 +401,7 @@ function AdminServices({
 
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-heading text-xl leading-tight font-medium text-foreground">
+                      <h3 className="font-heading text-xl leading-tight font-medium break-words text-foreground">
                         {service.serviceName}
                       </h3>
                       <StatusBadge status={service.status} />

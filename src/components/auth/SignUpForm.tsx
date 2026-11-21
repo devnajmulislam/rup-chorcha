@@ -331,8 +331,8 @@ function SignUpForm({ redirectTo = "" }: { redirectTo?: string }) {
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-plum"
+                size="icon"
+                className="absolute top-1/2 right-1.5 -translate-y-1/2 text-muted-foreground hover:text-plum"
                 onClick={() => setShowPassword((visible) => !visible)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}

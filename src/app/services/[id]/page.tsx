@@ -53,7 +53,7 @@ export default async function ServiceDetailPage({
     return (
       <div className="flex min-h-full flex-col">
         <Navbar />
-        <main className="flex flex-1 items-center py-16">
+        <main id="main-content" tabIndex={-1} className="flex flex-1 items-center py-16">
           <Container className="max-w-xl">
             <div
               role="alert"
@@ -109,7 +109,7 @@ export default async function ServiceDetailPage({
   return (
     <div className="flex min-h-full flex-col">
       <Navbar />
-      <main className="flex-1 py-12 sm:py-16">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-12 sm:py-16">
         <Container className="flex flex-col gap-8">
           <Link
             href="/services"

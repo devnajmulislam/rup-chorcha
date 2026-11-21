@@ -14,7 +14,13 @@ export default async function PaymentLayout({
   return (
     <>
       <Navbar />
-      <main className="min-h-[70dvh] bg-ivory py-12 sm:py-16">{children}</main>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="min-h-[70dvh] bg-ivory py-12 sm:py-16"
+      >
+        {children}
+      </main>
       <Footer />
     </>
   )

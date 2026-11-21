@@ -53,7 +53,7 @@ export default async function SignInPage({
 
   return (
     <div className="flex min-h-full flex-col">
-      <main className="flex-1 py-12 sm:py-16 lg:py-20">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-12 sm:py-16 lg:py-20">
         <Container className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:items-start lg:gap-16">
           <div className="flex max-w-xl flex-col gap-5">
             <p className="text-xs font-semibold tracking-[0.24em] text-primary uppercase">

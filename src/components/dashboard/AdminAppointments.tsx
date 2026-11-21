@@ -400,7 +400,7 @@ function AdminAppointments({
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 flex-col gap-1.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-heading text-2xl leading-tight font-medium text-foreground">
+                        <h3 className="font-heading text-2xl leading-tight font-medium break-words text-foreground">
                           {appointment.serviceName}
                         </h3>
                         <span className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
@@ -409,17 +409,17 @@ function AdminAppointments({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground">
-                        <span className="inline-flex items-center gap-1.5 font-medium">
+                        <span className="inline-flex min-w-0 items-center gap-1.5 font-medium break-words">
                           <UserRound
-                            className="size-4 text-primary"
+                            className="size-4 shrink-0 text-primary"
                             aria-hidden="true"
                           />
                           {appointment.customerName}
                         </span>
                         {appointment.customerEmail ? (
-                          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 break-all text-muted-foreground">
                             <Mail
-                              className="size-3.5 text-rose"
+                              className="size-3.5 shrink-0 text-rose"
                               aria-hidden="true"
                             />
                             {appointment.customerEmail}

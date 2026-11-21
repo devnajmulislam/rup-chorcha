@@ -184,6 +184,12 @@ function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-ivory">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-4 focus:z-50 focus:rounded-full focus:bg-plum focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-ivory focus:shadow-md focus:outline-none focus:ring-3 focus:ring-ring/50"
+      >
+        Skip to main content
+      </a>
       <Container className="flex h-20 items-center justify-between gap-6">
         <Logo wordmarkClassName="text-2xl sm:text-[1.65rem]" />
 

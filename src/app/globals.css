@@ -77,7 +77,7 @@
   --secondary: var(--blush);
   --secondary-foreground: var(--plum);
   --muted: color-mix(in srgb, var(--blush) 52%, var(--ivory));
-  --muted-foreground: color-mix(in srgb, var(--charcoal) 62%, var(--ivory));
+  --muted-foreground: color-mix(in srgb, var(--charcoal) 72%, var(--ivory));
   --accent: var(--blush);
   --accent-foreground: var(--plum);
   --destructive: #b42318;

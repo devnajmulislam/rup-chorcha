@@ -23,7 +23,7 @@ function Footer() {
               wordmarkClassName="text-[1.9rem]"
               taglineClassName="text-[1.15rem]"
             />
-            <p className="text-sm leading-6 text-ivory/70">
+            <p className="text-sm leading-6 text-ivory/80">
               A considered space for beauty, care, and the quiet confidence that
               comes from feeling like yourself.
             </p>
@@ -37,7 +37,7 @@ function Footer() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="w-fit text-sm text-ivory/75 transition-colors hover:text-ivory focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ivory/40"
+                className="w-fit py-0.5 text-sm text-ivory/85 transition-colors hover:text-ivory focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ivory/40"
               >
                 {link.label}
               </Link>
@@ -48,14 +48,14 @@ function Footer() {
             <h2 className="font-sans text-xs font-semibold tracking-[0.22em] text-rose uppercase">
               Visit
             </h2>
-            <p className="flex items-start gap-2.5 text-sm leading-6 text-ivory/75">
+            <p className="flex items-start gap-2.5 text-sm leading-6 text-ivory/85">
               <MapPin
                 className="mt-1 size-4 shrink-0 text-rose"
                 aria-hidden="true"
               />
               <span>Dhaka, Bangladesh</span>
             </p>
-            <p className="flex items-start gap-2.5 text-sm leading-6 text-ivory/75">
+            <p className="flex items-start gap-2.5 text-sm leading-6 text-ivory/85">
               <Clock3
                 className="mt-1 size-4 shrink-0 text-rose"
                 aria-hidden="true"
@@ -64,7 +64,7 @@ function Footer() {
             </p>
             <a
               href="mailto:hello@rupchorcha.com"
-              className="flex items-start gap-2.5 text-sm leading-6 text-ivory/75 transition-colors hover:text-ivory focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ivory/40"
+              className="flex w-fit items-start gap-2.5 py-0.5 text-sm leading-6 text-ivory/85 transition-colors hover:text-ivory focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ivory/40"
             >
               <Mail
                 className="mt-1 size-4 shrink-0 text-rose"
@@ -75,9 +75,9 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-ivory/15 pt-6 text-xs text-ivory/55 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-3 border-t border-ivory/15 pt-6 text-xs text-ivory/75 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} RupChorcha. All rights reserved.</p>
-          <p className="font-script text-base text-ivory/70">
+          <p className="font-script text-base text-ivory/85">
             Beauty, Elegance &amp; Confidence
           </p>
         </div>

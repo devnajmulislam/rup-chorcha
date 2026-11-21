@@ -47,11 +47,11 @@ function ServiceCard({ service, className }: ServiceCardProps) {
 
       <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
         <div className="flex flex-col gap-1.5">
-          <h3 className="font-heading text-2xl leading-tight font-medium text-foreground">
+          <h3 className="font-heading text-2xl leading-tight font-medium break-words text-foreground">
             {service.serviceName}
           </h3>
           {service.description ? (
-            <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+            <p className="line-clamp-3 text-sm leading-6 break-words text-muted-foreground">
               {service.description}
             </p>
           ) : null}

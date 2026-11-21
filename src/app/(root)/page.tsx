@@ -93,7 +93,7 @@ const whyPoints: { title: string; description: string; icon: LucideIcon }[] = [
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1">
         <section id="top" className="relative scroll-mt-24 overflow-hidden">
           <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-blush/70 blur-3xl sm:size-96" />
           <div className="pointer-events-none absolute top-32 -left-28 size-64 rounded-full border border-rose/30" />

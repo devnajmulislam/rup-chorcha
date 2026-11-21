@@ -47,7 +47,7 @@ export default async function ServicesPage({
   return (
     <div className="flex min-h-full flex-col">
       <Navbar />
-      <main className="flex-1 py-14 sm:py-20">
+      <main id="main-content" tabIndex={-1} className="flex-1 py-14 sm:py-20">
         <Container className="flex flex-col gap-8">
           <PageHeader
             eyebrow="The menu"
