@@ -699,14 +699,14 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 - [x] Acceptance: duplicate active slots for the same customer return 409; different customers can use the same slot; customers cannot see or modify others' appointments.
 - [x] Commit: `fc3b1d8` (`feat(server): add customer appointment booking, availability, and ownership APIs`).
 
-#### Client (Step 3 Booking Flow Completed; Customer Dashboard Migration Pending Step 4B)
+#### Client (Step 3 Booking Flow & Step 4B Customer Dashboard Migration — Completed)
 
 - [x] Build `/services/[id]`, BFF availability/booking proxy (`/api/backend/services/[id]/availability`, `/api/backend/appointments`), and the booking form (`AppointmentBookingForm`) with Base UI calendar popover, `Asia/Dhaka` time slots, booked/past slot badges, and optional 500-char notes.
 - [x] Add booking confirmation panel, inline `409 DUPLICATE_APPOINTMENT_SLOT` conflict handling, toast feedback, and `401`/`403 USER_BLOCKED` redirect handling.
-- [ ] Migrate the customer dashboard layout, overview stats, My Appointments list/detail/cancel actions off direct MongoDB to Express APIs *(Step 4B)*.
-- [~] Test booking lifecycle, conflict recovery, blocked-user rejection, loading, and error/not-found states (`5/5` Step 3 E2E passed; live Chrome mobile viewport QA pending manual check due to unavailable `chrome_devtools` MCP).
-- [x] Acceptance (Step 3): customer can book an active service with server price snapshot; same-customer duplicate slots return 409; different customers can book the same slot; admin/blocked users cannot book.
-- [x] Commit: `4f327dd` (`feat(client): add protected service details page and customer appointment booking flow`).
+- [x] Migrate the customer dashboard overview (`/customer`), My Appointments list/status filters/pagination (`/customer/appointments`), appointment details dialog, pending cancel BFF (`/api/backend/appointments/[id]/cancel`), and `/customer/profile` (with live ImgBB photo upload `/api/backend/uploads/profile-image`) off direct MongoDB to Express APIs *(Step 4B; Customer Payments tab & Pay Now pre-check isolated in `src/lib/transactions-legacy.ts` until Step 5)*.
+- [~] Test booking lifecycle, conflict recovery, blocked-user rejection, loading, and error/not-found states (`5/5` Step 3 E2E & `12/12` Step 4B live E2E passed; live Chrome interactive UI QA remains pending manual check).
+- [x] Acceptance (Step 3 & Step 4B): customer can book an active service with server price snapshot; same-customer duplicate slots return 409; different customers can book the same slot; customer dashboard/appointments/profile run solely on Express APIs with `MONGODB_URI=""` & `IMGBB_API_KEY=""`.
+- [x] Commit: `4f327dd` (`feat(client): add protected service details page and customer appointment booking flow`) & Step 4B migration commit.
 
 ### Phase 4 — Admin management
 
@@ -720,18 +720,18 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 - [x] Acceptance: only pending appointments can be confirmed; admins cannot block admins; profile cannot change role, email, or blocked status.
 - [x] Commit: `7405266` (`feat(server): add customer/admin dashboard, admin appointment/user management, and profile APIs`).
 
-#### Client (Pending Step 4B Migration off Direct MongoDB / ImgBB)
+#### Client (Step 4B — Completed)
 
-- [ ] Build the admin dashboard layout and overview.
-- [ ] Build Manage Services with search, filter, sort, status toggle, edit, and delete.
-- [ ] Build Add Service and Edit Service forms with image upload and preview.
-- [ ] Build Manage Appointments with details, confirm, and cancel.
-- [ ] Build Manage Users with details and block/unblock.
-- [ ] Add profile pages for customer and admin.
-- [ ] Add a transactions page placeholder until Phase 5.
-- [ ] Test role-based navigation and URL guards.
-- [ ] Acceptance: admin can manage services, appointments, and users; customers cannot open admin routes.
-- [ ] Commit: `feat(client): add admin dashboard, service management, appointments, and users`.
+- [x] Build/migrate the admin dashboard layout (`/admin/layout.tsx`) and Express-backed overview (`/admin`).
+- [x] Migrate Manage Services (`/admin/services`) with Express search, category/status filters, sorting, pagination, status toggle, edit, and delete (`DELETE` hard-delete or auto-deactivate).
+- [x] Migrate Add Service (`/admin/services/new`), Update Service (`/admin/services/update`, `/admin/services/update/[id]`), and `POST /api/admin/uploads/service-image` proxy onto Express (`IMGBB_API_KEY` removed from Next.js code and `.env.example`).
+- [x] Migrate Manage Appointments (`/admin/appointments`) with Express filters, search, pagination, live detail BFF (`/api/backend/admin/appointments/[id]`), confirm, and cancel.
+- [x] Migrate Manage Users (`/admin/users`) with Express search/status/pagination, live detail BFF (`/api/backend/admin/users/[id]`), and customer block/unblock.
+- [x] Migrate `/customer/profile` and `/admin/profile` onto Express `GET`/`PATCH /api/profile` + `POST /api/backend/uploads/profile-image`.
+- [x] Retain transactions placeholder/legacy reader (`/admin/transactions` via `src/lib/transactions-legacy.ts`) isolated strictly until Step 5 Express Stripe/transactions APIs.
+- [x] Remove obsolete direct-MongoDB modules (`src/lib/services.ts`, `src/lib/appointments.ts`, `src/lib/admin.ts`) and verify role-based navigation and URL guards (`12/12` Step 4B live E2E passed).
+- [x] Acceptance: admin can manage services, appointments, and users via Express APIs; customers cannot open admin routes (`307`/`403`); Next.js dashboard runs cleanly with `MONGODB_URI=""` & `IMGBB_API_KEY=""`.
+- [x] Commit: Step 4B frontend migration commit (`feat(client): migrate customer/admin dashboards, profile, and image uploads to Express APIs`).
 
 ### Phase 5 — Payments
 
@@ -797,7 +797,7 @@ Do not skip acceptance criteria. Each phase ends with a commit checkpoint.
 
 The assignment requires at least 20 meaningful client commits and 12 meaningful server commits.
 
-### Client — target 20+, current 14 (15 with Step 4A docs)
+### Client — target 20+, current 15 before Step 4B commits
 
 - [x] Theme, fonts, providers, toaster
 - [x] Public layout, navbar, footer (Footer route links updated to `/`, `/services`, `/#categories`, `/#why`)
@@ -810,21 +810,21 @@ The assignment requires at least 20 meaningful client commits and 12 meaningful 
 - [x] Auth client, BFF routes, and sign-up
 - [x] Sign-in and Google OAuth BFF initiation/callback
 - [x] Route guards (`src/proxy.ts`, `src/lib/session.ts`) and role redirects
-- [~] Customer dashboard layout and overview (auth/BFF wired; data queries migrate in Step 4)
-- [~] Customer appointments list and detail (backend `/api/appointments/my*` complete in Step 3A; dashboard UI migrates in Step 4)
-- [~] Customer cancel flow (backend `PATCH /api/appointments/my/:id/cancel` complete in Step 3A; dashboard UI migrates in Step 4)
-- [ ] Pay Now and checkout redirect
-- [ ] Payment success and cancel pages
-- [ ] Customer payment history
-- [~] Profile management (auth BFF `/api/auth/profile` wired; ImgBB profile upload in Step 4)
-- [~] Admin dashboard layout and overview (auth/BFF wired; data queries migrate in Step 4)
-- [~] Admin services table (migrates in Step 4)
-- [~] Add/edit service and image upload (migrates in Step 4; Express API ready in Step 2A)
-- [~] Admin appointment management (migrates in Step 4)
-- [~] Admin user management (migrates in Step 4)
-- [~] Admin transactions (migrates in Step 5)
-- [ ] Responsive, loading, error, and empty-state polish
-- [ ] README and env example (frontend `.env.example` synchronized; `README.md` pending Step 7)
+- [x] Customer dashboard layout and overview (`/customer` -> Express `GET /api/dashboard/customer`)
+- [x] Customer appointments list and detail (`/customer/appointments` -> Express `GET /api/appointments/my`, status tabs & 10/page pagination)
+- [x] Customer cancel flow (`/api/backend/appointments/[id]/cancel` -> Express `PATCH /api/appointments/my/:id/cancel`)
+- [ ] Pay Now and checkout redirect *(Step 5; Pay Now pre-check temporarily in `src/lib/transactions-legacy.ts`)*
+- [ ] Payment success and cancel pages *(Step 5)*
+- [~] Customer payment history *(UI Payments tab intact via `src/lib/transactions-legacy.ts`; Express `/api/transactions/my` in Step 5)*
+- [x] Profile management (`GET`/`PATCH /api/auth/profile` -> Express `/api/profile`, plus `POST /api/backend/uploads/profile-image` -> Express `POST /api/uploads/profile-image`)
+- [x] Admin dashboard layout and overview (`/admin` -> Express `GET /api/dashboard/admin`)
+- [x] Admin services table (`/admin/services` -> Express `GET`/`PATCH`/`DELETE /api/admin/services*`)
+- [x] Add/edit service and image upload (`/admin/services/new`, `/admin/services/update/[id]`, `POST /api/admin/uploads/service-image` -> Express ImgBB proxy)
+- [x] Admin appointment management (`/admin/appointments`, `/api/backend/admin/appointments/[id]` -> Express `/api/admin/appointments*`)
+- [x] Admin user management (`/admin/users`, `/api/backend/admin/users/[id]` -> Express `/api/admin/users*`)
+- [~] Admin transactions (`/admin/transactions` read-only via `src/lib/transactions-legacy.ts` until Step 5 `/api/admin/transactions`)
+- [~] Responsive, loading, error, and empty-state polish (dashboard error/empty/pagination complete; full interactive Chrome QA in Step 6)
+- [~] README and env example (frontend `.env.example` synchronized with `IMGBB_API_KEY` removed; `README.md` pending Step 7)
 
 ### Server — target 12+, current 11 (commits `7e52bfc` .. Step 4A docs)
 
@@ -869,9 +869,9 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 
 ### Services
 
-- [x] Admin can add a service with an image (backend API verified via `POST /api/admin/services` + live ImgBB upload; admin dashboard UI wires to Express in Step 4B).
-- [x] Admin can update and deactivate a service (backend API verified; admin UI migration pending Step 4B).
-- [x] Admin can delete an unreferenced service (backend API verified; admin UI migration pending Step 4B).
+- [x] Admin can add a service with an image (Express `POST /api/admin/services` + Next BFF `POST /api/admin/uploads/service-image` -> live ImgBB verified in Step 4B).
+- [x] Admin can update and deactivate a service (`/admin/services`, `/admin/services/update/[id]`, `PUT /api/admin/services/:id`, and `PATCH /api/admin/services/:id/status` verified in Step 4B).
+- [x] Admin can delete an unreferenced service (`DELETE /api/admin/services/:id` verified in Step 4B).
 - [x] Invalid price and duration are rejected (backend Zod `.strict()` verified).
 - [x] Public pages show active services only (verified on live `/` and `/services`).
 - [x] Search by name works (verified via live `/services?search=...`).
@@ -889,10 +889,10 @@ Do not fake commits by splitting unrelated changes. Each commit should represent
 - [x] Customer sees only their own appointments (verified in `tests/appointments.test.js` & `tests/dashboard-admin-profile.test.js` `GET /api/appointments/my`, `GET /api/dashboard/customer`, and `403 FORBIDDEN` on cross-customer `/my/:id`).
 - [x] Customer can cancel only pending appointments (verified in `tests/appointments.test.js`, freeing the slot for rebooking).
 - [x] Customer cannot cancel confirmed or cancelled appointments (verified `409 INVALID_STATUS_TRANSITION` in `tests/appointments.test.js`).
-- [x] Admin can confirm only pending appointments *(backend API verified via `PATCH /api/admin/appointments/:id/confirm` & `/status`; UI migration in Step 4B)*.
-- [x] Admin can cancel pending and confirmed appointments *(backend API verified preserving `paymentStatus` history; UI migration in Step 4B)*.
-- [x] Admin sees customer, service, message, price, status, payment status, and request date *(backend `/api/admin/appointments*` verified; UI migration in Step 4B)*.
-- [x] Blocked customer cannot book (verified `307 /sign-in?blocked=1` on `/services/[id]` and `403 USER_BLOCKED` on `POST /api/backend/appointments` + Express).
+- [x] Admin can confirm only pending appointments (`PATCH /api/admin/appointments/:id/confirm` verified + `/admin/appointments?status=confirmed` SSR + `409` on double confirm in Step 4B).
+- [x] Admin can cancel pending and confirmed appointments (`PATCH /api/admin/appointments/:id/cancel` preserving `paymentStatus` history verified in Step 4B).
+- [x] Admin sees customer, service, message, price, status, payment status, and request date (`/admin/appointments` SSR + `/api/backend/admin/appointments/[id]` detail BFF verified in Step 4B).
+- [x] Blocked customer cannot book (verified `307 /sign-in?blocked=1` on `/services/[id]` & `/customer`, `403 USER_BLOCKED` on `POST /api/backend/appointments`, `/api/auth/profile`, and `/api/backend/uploads/profile-image`).
 
 ### Payments
 
@@ -991,7 +991,7 @@ Update this file whenever one of these assumptions changes.
 
 # Project Status & Development Roadmap
 
-> Last updated: 2026-11-21 (Step 1–3 complete; **Step 4A: Express Dashboard, Admin & Profile APIs** completed in `rup-chorcha-backend` `7405266`; **Step 4B: Frontend Dashboard, Admin & Profile Migration** is next).
+> Last updated: 2026-11-21 (Step 1–4 complete: **Step 4A Express APIs** `7405266` and **Step 4B Frontend Dashboard, Admin & Profile Migration**; **Step 5: Stripe Checkout, Verified Webhook & Payment Pages** is next).
 >
 > Checkbox legend:
 > - `[x]` Completed and verified
@@ -1018,84 +1018,86 @@ Update this file whenever one of these assumptions changes.
 
 - [x] Express customer booking & availability APIs (`GET /api/services/:id/availability`, `POST /api/appointments`, `GET /api/appointments/my`, `GET /api/appointments/my/:id`, `PATCH /api/appointments/my/:id/cancel`) + Next.js `/services/[id]` page, `AppointmentBookingForm`, and `/api/backend/*` booking BFF routes.
 
-### Step 4A — Express Dashboard, Admin & Profile APIs (`rup-chorcha-backend`, commit `7405266`)
+### Step 4A — Express Dashboard, Admin & Profile APIs (`rup-chorcha-backend`, commit `7405266`, docs `6559bd0`)
 
-- [x] **Customer & Admin Dashboards (`modules/dashboard/*`, `routes/dashboard.routes.js`):**
-  - `GET /api/dashboard/customer` (`...protect("customer")`): strictly scoped to `req.user.id`, returning safe profile, `$group` booking/payment counters, future `Asia/Dhaka` upcoming appointments, and recent 5 items.
-  - `GET /api/dashboard/admin` (`...protect("admin")`): parallel aggregations for customers (`active`/`blocked`), services (`active`/`inactive`), appointments, transactions (`totalRevenueCents`, `successfulPayments`, `failedPayments`, explicit `hasRecordedTransactions` flag), and recent 5 hydrated appointments.
-- [x] **Admin Appointments Management (`modules/appointments/*`, `routes/admin.appointments.routes.js`):**
-  - `GET /api/admin/appointments` (status, `paymentStatus`, `date`, regex-escaped `search`, `$facet` pagination + `meta.counts`), `GET /api/admin/appointments/:id`, `PATCH /api/admin/appointments/:id/confirm`, `PATCH /api/admin/appointments/:id/cancel` (preserves `paymentStatus` history), and `PATCH /api/admin/appointments/:id/status` (`.strict()` schema blocking invalid status transitions or price/customer/service tampering).
-- [x] **Admin User Management (`modules/users/*`, `routes/admin.users.routes.js`):**
-  - `GET /api/admin/users`, `GET /api/admin/users/:id`, `PATCH /api/admin/users/:id/block`, `PATCH /api/admin/users/:id/unblock`: strictly customer-only (`403 CANNOT_BLOCK_ADMIN` on admin/self), excludes sensitive fields (`password`, `token`, `_id`), revokes Better Auth `session` docs across `ObjectId`/`string` IDs on block, and enforces `USER_BLOCKED` on protected routes.
-- [x] **Profile & Profile Image Upload (`modules/profile/*`, `routes/profile.routes.js`, `routes/uploads.routes.js`):**
-  - `GET /api/profile` & `PATCH /api/profile` (`.strict()` `{ name?, phone?, image? }`), and `POST /api/uploads/profile-image` reusing `lib/imgbb.js` & `middleware/upload.js` to persist hosted ImgBB URLs solely on `req.user.id`.
-- [x] **Verification:** `node --check` passed on all backend `.js` files; `npm.cmd test` passed **20/20 across 4 suites** (`tests/dashboard-admin-profile.test.js` + existing suites); live ImgBB `POST /api/uploads/profile-image` smoke test passed (`200 OK`, `https://i.ibb.co/W4sYxgLq/stage4a-profile-1795248691995.png`).
+- [x] Express `GET /api/dashboard/customer`, `GET /api/dashboard/admin`, `/api/admin/appointments*` (list/filter/search/paginate, detail, confirm, cancel, status), `/api/admin/users*` (customers directory, detail, session-revoking block/unblock), `GET`/`PATCH /api/profile`, and `POST /api/uploads/profile-image` (`20/20` backend tests + live ImgBB upload smoke test passed).
+
+### Step 4B — Frontend Dashboard, Admin & Profile Migration (`rup-chorcha`)
+
+- [x] **Shared Types & Authenticated Express / BFF Infrastructure:**
+  - Added `src/lib/dashboard-types.ts` (client/server DTOs & approved CDN hosts), `src/lib/backend-api.ts` (server-only Express helper with `API_URL`, `NEXT_PUBLIC_APP_URL` Origin header, 10s AbortController timeout, Zod response validation, and typed `ExpressApiResult<T>` across all Step 4A/2A/3 endpoints), and `proxyAuthenticatedMultipart()` in `src/lib/backend-bff.ts` (`5 MB` + MIME check + CSRF + role guard + Bearer JWT forwarding).
+  - Added BFF routes `POST /api/backend/uploads/profile-image`, `PATCH /api/backend/appointments/[id]/cancel`, `GET /api/backend/admin/appointments/[id]`, and `GET /api/backend/admin/users/[id]`.
+  - Updated `GET`/`PATCH`/`POST /api/auth/profile` to call Express `GET`/`PATCH /api/profile` with Bearer JWT + Better Auth session JWT cookie refresh.
+  - Updated `POST /api/admin/uploads/service-image` to remove direct `process.env.IMGBB_API_KEY` / `api.imgbb.com` logic and proxy multipart uploads via Bearer JWT to Express `POST /api/admin/uploads/service-image`.
+- [x] **Customer Dashboard Migration:**
+  - Migrated `/customer` (`src/app/(dashboard)/customer/page.tsx`), `/customer/appointments` (`page.tsx`, `actions.ts`, `AppointmentCard.tsx`, `CustomerAppointmentsView.tsx`), `/customer/profile` (`page.tsx`, `ProfileForm.tsx`, `src/lib/auth-client.ts` `uploadMyProfileImage`), and added `DashboardPagination.tsx` (`10`/page pagination, status tabs, global counts, error retry without fake zeros, JPEG/PNG/WebP/GIF `<=5 MB` photo upload).
+- [x] **Admin Dashboard Migration:**
+  - Migrated `/admin` (`page.tsx`), `/admin/profile` (`page.tsx`), `/admin/services` (`page.tsx`, `actions.ts`, `update/page.tsx`, `update/[id]/page.tsx`, `AdminServices.tsx`, `ServiceForm.tsx`), `/admin/appointments` (`page.tsx`, `actions.ts`, `AdminAppointments.tsx`), and `/admin/users` (`page.tsx`, `actions.ts`, `AdminUsers.tsx`).
+- [x] **Direct Database & ImgBB Cleanup:**
+  - Removed obsolete direct-MongoDB modules `src/lib/services.ts`, `src/lib/appointments.ts`, and `src/lib/admin.ts`.
+  - Removed `IMGBB_API_KEY` from frontend source code and `.env.example` (zero `api.imgbb.com` / `IMGBB_API_KEY` matches remain in `src/`).
+  - Isolated remaining temporary Step-5-deferred MongoDB reads (`getCustomerTransactions`, `verifyPayableAppointment`, `getAllTransactions`) into `src/lib/transactions-legacy.ts` (`src/lib/db.ts`), called solely by `/customer/appointments` (Payments tab & Pay Now pre-check) and `/admin/transactions` until Step 5 adds Express payment/transaction APIs. Better Auth remains strictly on `rup-chorcha-backend` (Next.js stores no local Better Auth database).
 
 ## B. Current Project Status
 
 ### Implemented Functionality
 
-- **Backend (`rup-chorcha-backend`, latest code commit `7405266`, 11 commits after Step 4A docs):** Auth, services, ImgBB service/profile uploads, customer appointments & availability, customer/admin dashboards, admin appointment & user management, and profile APIs are complete and tested.
-- **Frontend (`rup-chorcha`, `14` code/docs commits + Step 4A docs update):** Same-origin auth BFF, server route guards, public `/`, `/services`, protected `/services/[id]`, and `/api/backend/*` booking/availability BFF routes are complete. Existing dashboard UI remains preserved without regression during Step 4A.
+- **Backend (`rup-chorcha-backend`, latest code commit `7405266`, 11 commits):** Auth, services, ImgBB service/profile uploads, customer appointments & availability, customer/admin dashboards, admin appointment & user management, and profile APIs are complete and verified.
+- **Frontend (`rup-chorcha`, 15 commits prior to Step 4B commits):** Same-origin auth BFF, server route guards, public `/` and `/services`, protected `/services/[id]` booking flow, and migrated Express-backed Customer/Admin dashboards, service/appointment/user management, profile management, and BFF image upload proxies are complete.
 
-### Frontend Migration Findings for Step 4B (`rup-chorcha` -> Express API)
+### Direct Database & Legacy Access Remaining (Intentional Step 5 Deferral Only)
 
-- **Customer dashboard direct-MongoDB dependencies (`src/lib/appointments.ts` -> `src/lib/db.ts`):**
-  - `src/app/(dashboard)/customer/page.tsx` (`getCustomerAppointments`, `getAppointmentStats`)
-  - `src/app/(dashboard)/customer/appointments/page.tsx` (`getCustomerAppointments`, `getCustomerTransactions`)
-  - `src/app/(dashboard)/customer/appointments/actions.ts` (`cancelPendingAppointment`)
-  - `src/components/dashboard/AppointmentCard.tsx` & `CustomerAppointmentsView.tsx`
-- **Admin dashboard direct-MongoDB & direct-ImgBB dependencies (`src/lib/admin.ts`, `src/lib/services.ts`, `src/app/api/admin/uploads/service-image/route.ts`):**
-  - `src/app/(dashboard)/admin/page.tsx` (`getAdminOverview`)
-  - `src/app/(dashboard)/admin/services/{page.tsx,actions.ts,new/page.tsx,update/page.tsx,update/[id]/page.tsx}` + `ServiceForm.tsx` / `AdminServices.tsx`
-  - `src/app/(dashboard)/admin/appointments/{page.tsx,actions.ts}` + `AdminAppointments.tsx`
-  - `src/app/(dashboard)/admin/users/{page.tsx,actions.ts}` + `AdminUsers.tsx`
-  - `src/app/api/admin/uploads/service-image/route.ts`: lines `94–143` call `https://api.imgbb.com/1/upload` directly with `process.env.IMGBB_API_KEY`; its `API_URL` fallback (`lines 147–198`) lacks Bearer JWT forwarding.
-  - `src/app/(dashboard)/admin/transactions/page.tsx` & customer `getCustomerTransactions` remain pending **Step 5** Stripe/transactions APIs.
-- **Profile pages & component (`src/app/(dashboard)/{customer,admin}/profile/page.tsx`, `src/components/dashboard/ProfileForm.tsx`, `src/app/api/auth/profile/route.ts`):**
-  - Currently read SSR session user and post to Better Auth `/api/auth/update-user` without file upload. Step 4B should switch profile reads/updates to Express `GET`/`PATCH /api/profile` (keeping session/JWT cookies synced) and wire profile image file upload via BFF -> Express `POST /api/uploads/profile-image`.
-- **Required Step 4B Frontend BFF / Server Client Integrations (keeping existing UI intact):**
-  - Shared server/BFF authenticated Express client helper (forwarding verified Bearer JWT + auto-refresh via `resolveBffSession` / `requireRole`).
-  - Browser BFF routes `/api/backend/profile`, `/api/backend/uploads/profile-image`, `/api/backend/admin/uploads/service-image`, `/api/backend/appointments/[id]/cancel` (or equivalent Express-backed Server Actions), `/api/backend/admin/services*`, `/api/backend/admin/appointments*`, and `/api/backend/admin/users*`.
-- **Defer to Step 5:** Stripe Checkout (`POST /api/payments/checkout`), webhook, `/api/payments/session/:id`, `/api/transactions/*`, `/payment/success`, and `/payment/cancel`.
+- **Retained temporarily:** `src/lib/db.ts` and `src/lib/transactions-legacy.ts` (`getCustomerTransactions`, `verifyPayableAppointment`, `getAllTransactions`) remain solely for `src/app/(dashboard)/customer/appointments/{page.tsx,actions.ts}` and `src/app/(dashboard)/admin/transactions/page.tsx` because Stripe Checkout and `/api/transactions/*` Express endpoints are scoped to Step 5.
+- **No direct DB dependency at runtime for Step 4B features:** All Step 4B E2E checks executed against `next start` with `MONGODB_URI=""` and `IMGBB_API_KEY=""`.
+- **Untracked local `.env` note:** Developer's local untracked `.env` still contains leftover `MONGODB_URI` (used temporarily by `transactions-legacy.ts`) and `IMGBB_API_KEY` (unused by Next.js code); `.env.example` documents only `MONGODB_*` as temporary for Step 5 and removes `IMGBB_API_KEY`.
 
-### Known Issues & Limitations
+### Known Issues & Remaining Manual Checks
 
-- **Chrome DevTools MCP Unavailable for Live Visual QA:** `chrome_devtools` MCP could not connect (`ENOENT` on `DevToolsActivePort`).
-- **Temporary Direct Env Vars in `rup-chorcha`:** `MONGODB_URI`, `MONGODB_DB_NAME`, and `IMGBB_API_KEY` remain temporarily on the Next.js server until Step 4B & Step 5 complete dashboard & transaction migration.
-- **Paid Appointment Cancellation:** Admin cancellation of a paid confirmed appointment preserves `paymentStatus: "paid"` in MongoDB without automatic Stripe refunds.
+- **Chrome DevTools MCP Unavailable for Live Visual QA:** `chrome_devtools` MCP failed earlier (`ENOENT` on `DevToolsActivePort`); interactive Chrome click-through across mobile/tablet/desktop drawers, image file-picker UI, dialogs, and visual toast notifications remains a manual check.
+- **Step 5 Pending:** Stripe Checkout (`POST /api/payments/checkout`), verified raw-body webhook, `/api/payments/session/:id`, `/api/transactions/*`, `/payment/success`, `/payment/cancel`, Customer Payments tab live API, and Admin Transactions live API.
+- **Paid Appointment Cancellation:** Admin cancellation of a paid confirmed appointment preserves `paymentStatus: "paid"` without automatic Stripe refunds.
 
-## C. Architecture (Step 4A Backend APIs Added)
+## C. Architecture (Step 4B Express Dashboard & BFF Integration)
 
-- Express `/api/dashboard/customer`, `/api/dashboard/admin`, `/api/admin/appointments*`, `/api/admin/users*`, `/api/profile`, and `/api/uploads/profile-image` run `requireAuth` (JWT signature + live MongoDB user lookup) -> `requireNotBlocked` -> `requireRole` (where role-restricted) -> strict Zod validation -> MongoDB aggregation/update -> standard `{ success, data, meta }` JSON responses.
+- **SSR Dashboard Pages & Server Actions (`src/lib/backend-api.ts`):** Verify role via `requireRole()` -> call Express `/api/dashboard/*`, `/api/admin/services*`, `/api/admin/appointments*`, `/api/admin/users*`, `/api/appointments/my*`, and `/api/profile` with `Authorization: Bearer <jwt>` and `API_URL`; handle `401`, `403 USER_BLOCKED` (`/sign-in?blocked=1`), and backend errors gracefully without misleading `0` metrics.
+- **Same-Origin Browser BFF (`src/lib/backend-bff.ts`, `src/app/api/backend/*`, `src/app/api/admin/uploads/service-image`, `src/app/api/auth/profile`):** Enforce `verifySameOriginCsrf()`, `resolveBffSession()`, role checks, `5 MB`/MIME validation, and Bearer JWT forwarding without exposing backend tokens, stack traces, or `IMGBB_API_KEY`.
+- **Failure Resilience:** Dead Express backend returns `503 BACKEND_UNAVAILABLE` on BFF routes and fails closed (`DashboardError` without leaking internal URLs or private customer data) on SSR dashboard routes.
 
 ## D. Environment Variables
 
-Same env schema as Step 3 (`rup-chorcha-backend` uses `IMGBB_API_KEY`, `MAX_UPLOAD_MB`, `UPLOAD_RATE_LIMIT_*`, `MONGODB_URI`, `JWT_*`, `BETTER_AUTH_*`; zero secrets in docs). Step 4B will remove `IMGBB_API_KEY` dependency from `rup-chorcha`.
+- **Removed from Next.js code & `.env.example`:** `IMGBB_API_KEY`.
+- **Temporary in Next.js `.env.example` (for Step 5 transactions/Pay Now legacy reader only):** `MONGODB_URI`, `MONGODB_DB_NAME`.
+- **Required Next.js runtime env vars:** `API_URL`, `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`.
 
-## E. Executed Tests & Verification Results (Step 4A Backend)
+## E. Executed Tests & Verification Results (Step 4B Final Verification)
 
-- **Backend Syntax Check:** `node --check` exited `0` across all `.js` files in `rup-chorcha-backend`.
-- **Backend Automated Test Suite (`npm.cmd test` -> `node --test tests/*.test.js`):** **20/20 passed across 4 suites, 0 failed, 0 skipped** (MongoDB Atlas + ephemeral Express server; `"Jhanker makeup"` `6b008bfdeda8c9a56f80bc57` untouched; temporary test records cleaned).
-- **Live ImgBB Profile Image Upload (`verify-step4a-live-imgbb.mjs`):** `POST /api/uploads/profile-image` -> `200 OK`, returned `https://i.ibb.co/W4sYxgLq/stage4a-profile-1795248691995.png`, persisted on temp customer, fetched `200 image/png`, temp user cleaned.
-- **No frontend files modified in Step 4A** (frontend build/lint unchanged from Step 3 verified commit `c5c69f0`).
+- **Route types & TypeScript (`npx.cmd next typegen && npx.cmd tsc --noEmit`):** Exit `0`, `0` errors.
+- **ESLint (`npm.cmd run lint`):** Exit `0`, `0` errors, `0` warnings.
+- **Production Next.js build (`npm.cmd run build`):** Exit `0`; all 22 static/dynamic routes compiled cleanly (`ƒ Proxy (Middleware)`).
+- **Direct DB & ImgBB cleanup scan (`Get-ChildItem src -Recurse | Select-String`):** Verified `0` `IMGBB_API_KEY`/`api.imgbb.com` references and `0` imports of removed `services.ts`/`appointments.ts`/`admin.ts`; only `src/lib/db.ts` and `src/lib/transactions-legacy.ts` remain for Step 5 deferred transaction callers.
+- **Full-Stack Step 4B Live E2E (`verify-step4b-e2e.mjs` against ephemeral Express + MongoDB Atlas + live ImgBB + `next start` with `MONGODB_URI=""`, `IMGBB_API_KEY=""` + dead-backend `next start`):** **12/12 checks passed (`exit 0`)**:
+  - Unauthenticated SSR (`307 -> /sign-in`) & BFF (`401`) rejection.
+  - Registration (`role` forced to `"customer"`), E2E admin login, customer-vs-admin SSR (`307`) & BFF (`403`) isolation.
+  - Admin service image live ImgBB upload (`POST /api/admin/uploads/service-image` -> `200`, hosted URL `https://i.ibb.co/W4sYxgLq/stage4a-profile-1795248691995.png`), invalid MIME (`400`), `/admin/services` SSR search, `/admin/services/update/[id]` SSR, and Express `PUT`/`PATCH status`/`DELETE`.
+  - Customer `/customer` dashboard SSR, `/customer/appointments?status=...` SSR, cross-customer isolation (`403` on BFF cancel), and own pending cancel (`PATCH /api/backend/appointments/[id]/cancel`).
+  - `/customer/profile` & `/admin/profile` SSR, strict `PATCH /api/auth/profile` stripping `role`/`isBlocked`/`email` tampering, and live ImgBB profile image upload (`POST /api/backend/uploads/profile-image` -> `200`, persisted on `/customer/profile` SSR).
+  - `/admin` overview SSR, `/admin/appointments` status/search filters, `/api/backend/admin/appointments/[id]` safe detail BFF, confirm/`409`/cancel transitions, `/admin/users` search, `/api/backend/admin/users/[id]` detail BFF, customer block/unblock enforcement (`307 /sign-in?blocked=1`, `403 USER_BLOCKED` on BFF & login, restore on unblock), backend-down `503`/fail-closed SSR, and pre-existing `"Jhanker makeup"` (`6b008bfdeda8c9a56f80bc57`) untouched + full temp test cleanup.
 
 ## F. Development Roadmap
 
 1. [x] **Step 1 — Express Foundation, DB Indexes, Better Auth/JWT & Same-Origin Next.js Auth BFF (`Part A` `0b2c6eb`, `Part B` `5a961b2`, `Part C Stage 1` `8e713d8`)**
 2. [x] **Step 2 — Services APIs & Public Pages (`Step 2A` `449a45c` / `ede3cc1` / `1bf7ec6`, `Step 2B` `4eefb87` / `8e209c8`)**
 3. [x] **Step 3 — Protected Service Details (`/services/[id]`) & Appointment Booking System (`rup-chorcha-backend` `fc3b1d8` / `ef10f2b`; `rup-chorcha` `4f327dd` / `c5c69f0`)**
-4. [~] **Step 4 — Express Dashboard, Admin & Profile APIs + Frontend Migration:**
-   - [x] **Step 4A (Backend `7405266`)**: Express `/api/dashboard/*`, `/api/admin/appointments*`, `/api/admin/users*`, `/api/profile`, and `/api/uploads/profile-image` complete & verified (`20/20`).
-   - [ ] **Step 4B (Frontend Migration)** *(Next Recommended Task)*: Replace direct MongoDB (`src/lib/{db,admin,appointments,services}.ts`) and direct Next.js ImgBB (`src/app/api/admin/uploads/service-image/route.ts`, `IMGBB_API_KEY`) usage across Customer/Admin dashboard pages, Server Actions, and `ProfileForm` (with profile image file upload) using Express + Next.js BFF calls, preserving existing UI and deferring transaction history/Stripe to Step 5.
-5. [ ] **Step 5 — Stripe Checkout, Verified Webhook & Payment Pages**: Implement Stripe Checkout, idempotent raw-body webhook, transaction APIs, `/payment/success`, and `/payment/cancel`.
-6. [ ] **Step 6 — Error Boundaries, Polish, Security & Manual QA**: Add `src/app/not-found.tsx`, remaining loading skeletons, responsive/accessibility/security verification, and clean unused assets.
+4. [x] **Step 4 — Express Dashboard, Admin & Profile APIs (`Step 4A` `7405266` / `6559bd0`) & Frontend Migration (`Step 4B` complete)**
+5. [ ] **Step 5 — Stripe Checkout, Verified Webhook & Payment Pages** *(Next Recommended Task)*: Implement Stripe Checkout, idempotent raw-body webhook, `/api/payments/session/:sessionId`, and `/api/transactions/*` in `rup-chorcha-backend`, then integrate Pay Now, `/payment/success`, `/payment/cancel`, Customer Payments tab, and Admin `/admin/transactions` and remove `src/lib/db.ts` + `src/lib/transactions-legacy.ts` + `MONGODB_URI` from `rup-chorcha`.
+6. [ ] **Step 6 — Error Boundaries, Polish, Security & Manual QA**: Add `src/app/not-found.tsx`, remaining loading skeletons, responsive/accessibility/security verification, interactive Chrome QA, and clean unused assets.
 7. [ ] **Step 7 — Documentation, Commit Targets & Production Deployment**: Complete both `README.md` files, satisfy >=20 client & >=12 server commits, deploy client (Vercel) and backend (Render/Railway), configure production Stripe/OAuth, and verify live refresh/reload.
 
 ## G. Development Rules & Lessons Learned
 
-- **Better Auth vs. Seeded User ID Lookup Compatibility:** Better Auth `user` docs may omit the string `id` field (relying on `_id`), while seeded docs and `session.userId` can use either `ObjectId` or string IDs. `buildUserCandidateIds(doc, rawId)` and dual `$toString: "$_id"` / `$id` `$lookup` pipelines ensure reliable admin lookups and immediate session revocation across both formats.
-- **Reusing Upload Validation Across Service & Profile Endpoints:** Keeping `lib/imgbb.js` + `middleware/upload.js` as a single parameterized pipeline prevents duplicated Multer/magic-byte logic while guaranteeing identical security limits and secret isolation.
-- **Windows / Sandbox verification rules:** Run `node --check` locally; run `npm.cmd test`, ImgBB upload verification, and Git commits with network/workspace lock permissions enabled.
+- **Build-Time `NEXT_PUBLIC_*` Inlining & CSRF Origin:** `next build` inlines `NEXT_PUBLIC_APP_URL` into `getAppOrigin()` inside compiled bundles, so production `POST`/`PATCH`/`DELETE` BFF requests validate `Origin`/`Referer` against the configured canonical `NEXT_PUBLIC_APP_URL` regardless of runtime bind host/port.
+- **Separate Auth Cookies vs. Backend-Down Resilience:** `403 USER_BLOCKED` clears auth cookies on BFF responses (`clearAllAuthCookies`), whereas `503 BACKEND_UNAVAILABLE` preserves cookies so users can retry once backend connectivity returns; SSR layouts (`requireSession`) throw `BackendUnavailableError` to fail closed via `error.tsx`.
+- **Clean Isolation of Deferred Step 5 Code:** Moving deferred transaction queries into `src/lib/transactions-legacy.ts` allowed deleting `src/lib/{services,appointments,admin}.ts` cleanly without breaking TypeScript, Next.js build, or existing `/admin/transactions` and Customer Payments tab UI.
+- **Windows / Sandbox verification rules:** Run `typegen`/`tsc`/`lint` locally; run `next build`, MongoDB Atlas/ImgBB integration tests, cross-repo Git commands, and Git commits with network/workspace access (`BypassSandbox: true`).
 
 
