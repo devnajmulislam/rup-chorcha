@@ -1,12 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ArrowLeft, TriangleAlert } from "lucide-react"
 
 import { ServiceForm } from "@/components/dashboard/ServiceForm"
 import { PageHeader } from "@/components/shared/PageHeader"
+import { RefreshRetryButton } from "@/components/shared/RefreshRetryButton"
 import { StatusBadge } from "@/components/shared/StatusBadge"
-import { getServiceById, type Service } from "@/lib/services"
+import { fetchAdminServiceById } from "@/lib/backend-api"
 import { requireRole } from "@/lib/session"
 
 export const metadata: Metadata = {
@@ -14,27 +15,59 @@ export const metadata: Metadata = {
   description: "Update a RupChorcha service.",
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function AdminUpdateServicePage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireRole("admin")
-
+  const session = await requireRole("admin")
   const { id } = await params
+  const result = await fetchAdminServiceById(session.accessToken, id)
 
-  let service: Service | null = null
-  let loadFailed = false
+  if (!result.ok) {
+    if (result.kind === "blocked") {
+      redirect("/sign-in?blocked=1")
+    }
+    if (result.kind === "unauthorized") {
+      redirect(`/sign-in?redirect=${encodeURIComponent(`/admin/services/update/${id}`)}`)
+    }
+    if (result.kind === "not_found") {
+      notFound()
+    }
 
-  try {
-    service = await getServiceById(id)
-  } catch {
-    loadFailed = true
+    return (
+      <div className="flex flex-col gap-8">
+        <Link
+          href="/admin/services/update"
+          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-plum hover:underline"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Choose another service
+        </Link>
+
+        <PageHeader
+          eyebrow="Service catalogue"
+          title="Update service"
+          description="Edit service details, status, or photo."
+        />
+
+        <div
+          role="alert"
+          className="flex flex-col items-start gap-4 rounded-2xl border border-destructive/25 bg-destructive/10 p-5 text-sm text-destructive"
+        >
+          <p className="flex items-start gap-2">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>{result.message}</span>
+          </p>
+          <RefreshRetryButton className="h-9 rounded-full border-destructive/30 bg-card px-4 text-xs text-foreground hover:bg-blush" />
+        </div>
+      </div>
+    )
   }
 
-  if (!loadFailed && !service) {
-    notFound()
-  }
+  const service = result.data
 
   return (
     <div className="flex flex-col gap-8">
@@ -49,26 +82,11 @@ export default async function AdminUpdateServicePage({
       <PageHeader
         eyebrow="Service catalogue"
         title="Update service"
-        description={
-          service
-            ? `Edit the details, status, or photo for ${service.serviceName}.`
-            : "Edit service details, status, or photo."
-        }
-        actions={service ? <StatusBadge status={service.status} /> : null}
+        description={`Edit the details, status, or photo for ${service.serviceName}.`}
+        actions={<StatusBadge status={service.status} />}
       />
 
-      {loadFailed || !service ? (
-        <p
-          role="alert"
-          className="flex items-start gap-2 rounded-xl bg-destructive/10 px-3.5 py-3 text-sm text-destructive"
-        >
-          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          We could not load this service right now. Refresh the page to try
-          again.
-        </p>
-      ) : (
-        <ServiceForm service={service} />
-      )}
+      <ServiceForm service={service} />
     </div>
   )
 }

@@ -3,15 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 
-import {
-  cancelPendingAppointment,
-  verifyPayableAppointment,
-} from "@/lib/appointments"
+import { cancelMyAppointment } from "@/lib/backend-api"
 import { requireRole } from "@/lib/session"
+import { verifyPayableAppointment } from "@/lib/transactions-legacy"
 
 type CancelAppointmentResult =
   | { success: true }
-  | { success: false; message: string }
+  | { success: false; message: string; code?: string; blocked?: boolean }
 
 type StartPaymentResult =
   | { success: true; checkoutUrl: string }
@@ -47,23 +45,14 @@ async function cancelAppointmentAction(
 ): Promise<CancelAppointmentResult> {
   const session = await requireRole("customer")
 
-  try {
-    const cancelled = await cancelPendingAppointment(
-      session.user.id,
-      appointmentId
-    )
+  const result = await cancelMyAppointment(session.accessToken, appointmentId)
 
-    if (!cancelled) {
-      return {
-        success: false,
-        message:
-          "Only your own pending appointment requests can be cancelled.",
-      }
-    }
-  } catch {
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not cancel this request. Please try again.",
+      message: result.message,
+      code: result.code,
+      blocked: result.kind === "blocked",
     }
   }
 
@@ -74,9 +63,8 @@ async function cancelAppointmentAction(
 }
 
 /**
- * Validates payment eligibility on the server and asks the Express API to
- * create a Stripe Checkout Session. Never modifies `paymentStatus`, which must
- * only change after a verified Stripe webhook event.
+ * Validates payment eligibility and asks the Express API to create a Stripe
+ * Checkout Session. Deferred until Step 5 Stripe integration.
  */
 async function startPaymentAction(
   appointmentId: string
@@ -119,6 +107,7 @@ async function startPaymentAction(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${session.accessToken}`,
         ...(cookieHeader ? { cookie: cookieHeader } : {}),
       },
       body: JSON.stringify({ appointmentId }),

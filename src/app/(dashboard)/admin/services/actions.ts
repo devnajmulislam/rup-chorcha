@@ -2,17 +2,18 @@
 
 import { revalidatePath } from "next/cache"
 
+import {
+  createAdminService,
+  deleteAdminService,
+  updateAdminService,
+  updateAdminServiceStatus,
+} from "@/lib/backend-api"
 import { SALON_CATEGORIES } from "@/lib/constants"
 import {
-  createService,
-  deleteService,
   isAllowedServiceImage,
-  setServiceStatus,
-  updateService,
-  type DeleteServiceOutcome,
   type ServiceInput,
   type ServiceStatus,
-} from "@/lib/services"
+} from "@/lib/dashboard-types"
 import { requireRole } from "@/lib/session"
 
 type ServiceField =
@@ -31,6 +32,7 @@ type ServiceActionResult =
   | {
       success: false
       message: string
+      blocked?: boolean
       fieldErrors?: Partial<Record<ServiceField, string>>
     }
 
@@ -123,21 +125,49 @@ function parseServiceValues(values: ServiceFormValues): ParsedService {
   }
 }
 
-function revalidateServicePaths() {
+function revalidateServicePaths(serviceId?: string) {
   revalidatePath("/admin")
   revalidatePath("/admin/services")
   revalidatePath("/admin/services/new")
   revalidatePath("/admin/services/update")
   revalidatePath("/admin/services/update/[id]", "page")
   revalidatePath("/services")
+  revalidatePath("/services/[id]", "page")
+  if (serviceId) {
+    revalidatePath(`/services/${serviceId}`)
+  }
   revalidatePath("/")
+}
+
+function mapServerFieldErrors(
+  errors?: Record<string, string>
+): Partial<Record<ServiceField, string>> | undefined {
+  if (!errors) {
+    return undefined
+  }
+
+  const allowed = new Set<ServiceField>([
+    "serviceName",
+    "category",
+    "description",
+    "price",
+    "duration",
+    "image",
+    "status",
+  ])
+  const mapped: Partial<Record<ServiceField, string>> = {}
+  for (const [key, val] of Object.entries(errors)) {
+    if (allowed.has(key as ServiceField)) {
+      mapped[key as ServiceField] = val
+    }
+  }
+  return Object.keys(mapped).length > 0 ? mapped : undefined
 }
 
 async function createServiceAction(
   values: ServiceFormValues
 ): Promise<ServiceActionResult> {
-  await requireRole("admin")
-
+  const session = await requireRole("admin")
   const parsed = parseServiceValues(values)
 
   if (!parsed.ok) {
@@ -148,23 +178,24 @@ async function createServiceAction(
     }
   }
 
-  try {
-    await createService(parsed.input)
-  } catch {
+  const result = await createAdminService(session.accessToken, parsed.input)
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not save this service. Please try again.",
+      message: result.message,
+      blocked: result.kind === "blocked",
+      fieldErrors: mapServerFieldErrors(result.fieldErrors),
     }
   }
 
-  revalidateServicePaths()
+  revalidateServicePaths(result.data.id)
 
   return {
     success: true,
     message:
-      parsed.input.status === "active"
-        ? `${parsed.input.serviceName} is now active on the public menu.`
-        : `${parsed.input.serviceName} has been saved as inactive.`,
+      result.data.status === "active"
+        ? `${result.data.serviceName} is now active on the public menu.`
+        : `${result.data.serviceName} has been saved as inactive.`,
   }
 }
 
@@ -172,8 +203,7 @@ async function updateServiceAction(
   serviceId: string,
   values: ServiceFormValues
 ): Promise<ServiceActionResult> {
-  await requireRole("admin")
-
+  const session = await requireRole("admin")
   const parsed = parseServiceValues(values)
 
   if (!parsed.ok) {
@@ -184,24 +214,25 @@ async function updateServiceAction(
     }
   }
 
-  try {
-    const updated = await updateService(serviceId, parsed.input)
-
-    if (!updated) {
-      return { success: false, message: "That service no longer exists." }
-    }
-  } catch {
+  const result = await updateAdminService(
+    session.accessToken,
+    serviceId,
+    parsed.input
+  )
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not update this service. Please try again.",
+      message: result.message,
+      blocked: result.kind === "blocked",
+      fieldErrors: mapServerFieldErrors(result.fieldErrors),
     }
   }
 
-  revalidateServicePaths()
+  revalidateServicePaths(serviceId)
 
   return {
     success: true,
-    message: `${parsed.input.serviceName} has been updated.`,
+    message: `${result.data.serviceName} has been updated.`,
   }
 }
 
@@ -209,26 +240,26 @@ async function setServiceStatusAction(
   serviceId: string,
   status: ServiceStatus
 ): Promise<ServiceActionResult> {
-  await requireRole("admin")
+  const session = await requireRole("admin")
 
   if (status !== "active" && status !== "inactive") {
     return { success: false, message: "Unknown service status." }
   }
 
-  try {
-    const updated = await setServiceStatus(serviceId, status)
-
-    if (!updated) {
-      return { success: false, message: "That service no longer exists." }
-    }
-  } catch {
+  const result = await updateAdminServiceStatus(
+    session.accessToken,
+    serviceId,
+    status
+  )
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not change this service. Please try again.",
+      message: result.message,
+      blocked: result.kind === "blocked",
     }
   }
 
-  revalidateServicePaths()
+  revalidateServicePaths(serviceId)
 
   return {
     success: true,
@@ -242,29 +273,23 @@ async function setServiceStatusAction(
 async function deleteServiceAction(
   serviceId: string
 ): Promise<ServiceActionResult> {
-  await requireRole("admin")
+  const session = await requireRole("admin")
 
-  let outcome: DeleteServiceOutcome
-
-  try {
-    outcome = await deleteService(serviceId)
-  } catch {
+  const result = await deleteAdminService(session.accessToken, serviceId)
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not delete this service. Please try again.",
+      message: result.message,
+      blocked: result.kind === "blocked",
     }
   }
 
-  if (outcome === "missing") {
-    return { success: false, message: "That service no longer exists." }
-  }
-
-  revalidateServicePaths()
+  revalidateServicePaths(serviceId)
 
   return {
     success: true,
     message:
-      outcome === "deactivated"
+      result.data.action === "deactivated"
         ? "This service has appointment history, so it was deactivated instead of deleted."
         : "Service deleted from the menu.",
   }

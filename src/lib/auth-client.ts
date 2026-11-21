@@ -435,6 +435,54 @@ async function updateMyProfile(input: {
   }
 }
 
+type ProfileImageUploadResult =
+  | { ok: true; url: string; user: AuthUser | null }
+  | AuthActionError
+
+async function uploadMyProfileImage(
+  file: File
+): Promise<ProfileImageUploadResult> {
+  try {
+    const body = new FormData()
+    body.append("image", file)
+
+    const response = await fetch("/api/backend/uploads/profile-image", {
+      method: "POST",
+      credentials: "same-origin",
+      body,
+    })
+
+    const payload = await parseJsonSafe<{
+      success?: boolean
+      code?: string
+      message?: string
+      data?: { url?: string; user?: AuthUser | null }
+    }>(response)
+
+    if (!response.ok || !payload?.success || !payload.data?.url) {
+      return toActionError(
+        response.status,
+        payload,
+        "Could not upload your profile image. Please try another file."
+      )
+    }
+
+    return {
+      ok: true,
+      url: payload.data.url,
+      user: payload.data.user ?? null,
+    }
+  } catch {
+    return {
+      ok: false,
+      status: 503,
+      code: "NETWORK_ERROR",
+      message:
+        "We could not reach RupChorcha to upload your image. Check your connection and try again.",
+    }
+  }
+}
+
 export {
   AuthSessionProvider,
   getAuthProviders,
@@ -443,6 +491,12 @@ export {
   registerWithEmail,
   startGoogleAuth,
   updateMyProfile,
+  uploadMyProfileImage,
   useAuthSession,
 }
-export type { AuthActionError, AuthUser, ProvidersResult }
+export type {
+  AuthActionError,
+  AuthUser,
+  ProfileImageUploadResult,
+  ProvidersResult,
+}

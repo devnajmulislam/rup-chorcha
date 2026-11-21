@@ -43,7 +43,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/toast"
-import type { CustomerAppointment } from "@/lib/appointments"
+import { useAuthSession } from "@/lib/auth-client"
+import type { CustomerAppointment } from "@/lib/dashboard-types"
 import {
   formatCurrency,
   formatSalonDate,
@@ -88,6 +89,7 @@ function statusNote(appointment: CustomerAppointment) {
 
 function AppointmentCard({ appointment }: AppointmentCardProps) {
   const router = useRouter()
+  const { setUser } = useAuthSession()
   const [cancelOpen, setCancelOpen] = React.useState(false)
   const [cancelling, setCancelling] = React.useState(false)
   const [paying, setPaying] = React.useState(false)
@@ -103,6 +105,11 @@ function AppointmentCard({ appointment }: AppointmentCardProps) {
       const result = await cancelAppointmentAction(appointment.id)
 
       if (!result.success) {
+        if (result.blocked) {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
         toast.add({
           title: "Could not cancel request",
           description: result.message,

@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache"
 
 import {
   cancelAdminAppointment,
-  confirmPendingAppointment,
-} from "@/lib/admin"
+  confirmAdminAppointment,
+} from "@/lib/backend-api"
 import { requireRole } from "@/lib/session"
 
 type AdminAppointmentActionResult =
   | { success: true; message: string }
-  | { success: false; message: string }
+  | { success: false; message: string; blocked?: boolean }
 
 function revalidateAppointmentPaths() {
   revalidatePath("/admin")
@@ -22,25 +22,17 @@ function revalidateAppointmentPaths() {
 async function confirmAppointmentAction(
   appointmentId: string
 ): Promise<AdminAppointmentActionResult> {
-  await requireRole("admin")
+  const session = await requireRole("admin")
+  const result = await confirmAdminAppointment(
+    session.accessToken,
+    appointmentId
+  )
 
-  try {
-    const outcome = await confirmPendingAppointment(appointmentId)
-
-    if (outcome === "missing") {
-      return { success: false, message: "Appointment request not found." }
-    }
-
-    if (outcome === "not_pending") {
-      return {
-        success: false,
-        message: "Only pending appointments can be confirmed.",
-      }
-    }
-  } catch {
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not confirm this appointment. Please try again.",
+      message: result.message,
+      blocked: result.kind === "blocked",
     }
   }
 
@@ -55,25 +47,17 @@ async function confirmAppointmentAction(
 async function cancelAdminAppointmentAction(
   appointmentId: string
 ): Promise<AdminAppointmentActionResult> {
-  await requireRole("admin")
+  const session = await requireRole("admin")
+  const result = await cancelAdminAppointment(
+    session.accessToken,
+    appointmentId
+  )
 
-  try {
-    const outcome = await cancelAdminAppointment(appointmentId)
-
-    if (outcome === "missing") {
-      return { success: false, message: "Appointment request not found." }
-    }
-
-    if (outcome === "already_cancelled") {
-      return {
-        success: false,
-        message: "This appointment is already cancelled.",
-      }
-    }
-  } catch {
+  if (!result.ok) {
     return {
       success: false,
-      message: "We could not cancel this appointment. Please try again.",
+      message: result.message,
+      blocked: result.kind === "blocked",
     }
   }
 

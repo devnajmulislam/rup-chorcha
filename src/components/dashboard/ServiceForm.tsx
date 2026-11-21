@@ -28,13 +28,14 @@ import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/toast"
+import { useAuthSession } from "@/lib/auth-client"
 import { SALON_CATEGORIES } from "@/lib/constants"
-import type { Service, ServiceStatus } from "@/lib/services"
+import type { AdminService, ServiceStatus } from "@/lib/dashboard-types"
 import { cn } from "cn"
 
 type ServiceFormProps = {
   /** Omit to add a new service; pass a service to update it. */
-  service?: Service | null
+  service?: AdminService | null
 }
 
 type FormErrors = Partial<Record<ServiceField | "form", string>>
@@ -47,7 +48,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
 ])
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
-function initialCategory(service?: Service | null) {
+function initialCategory(service?: AdminService | null) {
   const categories: readonly string[] = SALON_CATEGORIES
 
   return service && categories.includes(service.category)
@@ -57,6 +58,7 @@ function initialCategory(service?: Service | null) {
 
 function ServiceForm({ service }: ServiceFormProps) {
   const router = useRouter()
+  const { setUser } = useAuthSession()
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [values, setValues] = React.useState<{
     serviceName: string
@@ -241,6 +243,11 @@ function ServiceForm({ service }: ServiceFormProps) {
         : await createServiceAction(payload)
 
       if (!result.success) {
+        if (result.blocked) {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
         setErrors({ ...result.fieldErrors, form: result.message })
         toast.add({
           title: isEditing ? "Service not updated" : "Service not added",

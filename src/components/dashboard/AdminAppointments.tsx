@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   CalendarDays,
@@ -22,6 +23,7 @@ import {
   cancelAdminAppointmentAction,
   confirmAppointmentAction,
 } from "@/app/(dashboard)/admin/appointments/actions"
+import { DashboardPagination } from "@/components/dashboard/DashboardPagination"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import {
@@ -34,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -43,12 +45,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import type { AdminAppointment } from "@/lib/admin"
-import type { AppointmentStatus } from "@/lib/appointments"
+import { useAuthSession } from "@/lib/auth-client"
+import type {
+  AdminAppointment,
+  AdminAppointmentCounts,
+  AppointmentStatus,
+  PaginationMeta,
+} from "@/lib/dashboard-types"
 import {
   formatCurrency,
   formatSalonDate,
@@ -65,6 +71,30 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "confirmed", label: "Confirmed" },
   { value: "cancelled", label: "Cancelled" },
 ]
+
+function buildFilterHref({
+  status,
+  search,
+  page = 1,
+}: {
+  status: StatusFilter
+  search: string
+  page?: number
+}): string {
+  const query = new URLSearchParams()
+  if (status && status !== "all") {
+    query.set("status", status)
+  }
+  const trimmed = search.trim()
+  if (trimmed) {
+    query.set("search", trimmed)
+  }
+  if (page > 1) {
+    query.set("page", String(page))
+  }
+  const serialized = query.toString()
+  return serialized ? `/admin/appointments?${serialized}` : "/admin/appointments"
+}
 
 function DetailRow({
   label,
@@ -85,45 +115,92 @@ function DetailRow({
 
 type AdminAppointmentsProps = {
   appointments: AdminAppointment[]
+  meta: PaginationMeta
+  counts: AdminAppointmentCounts
+  activeStatus: StatusFilter
+  initialSearch: string
 }
 
-function AdminAppointments({ appointments }: AdminAppointmentsProps) {
+function AdminAppointments({
+  appointments,
+  meta,
+  counts,
+  activeStatus,
+  initialSearch,
+}: AdminAppointmentsProps) {
   const router = useRouter()
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all")
-  const [search, setSearch] = React.useState("")
+  const { setUser } = useAuthSession()
+  const [searchInput, setSearchInput] = React.useState(initialSearch)
+  const [prevSearchProp, setPrevSearchProp] = React.useState(initialSearch)
   const [confirmingId, setConfirmingId] = React.useState<string | null>(null)
   const [cancelTarget, setCancelTarget] =
     React.useState<AdminAppointment | null>(null)
   const [cancelling, setCancelling] = React.useState(false)
+  const [detailTarget, setDetailTarget] =
+    React.useState<AdminAppointment | null>(null)
+  const [loadingDetail, setLoadingDetail] = React.useState(false)
 
-  const counts: Record<StatusFilter, number> = {
-    all: appointments.length,
-    pending: appointments.filter((item) => item.status === "pending").length,
-    confirmed: appointments.filter((item) => item.status === "confirmed").length,
-    cancelled: appointments.filter((item) => item.status === "cancelled").length,
+  if (initialSearch !== prevSearchProp) {
+    setPrevSearchProp(initialSearch)
+    setSearchInput(initialSearch)
   }
 
-  const normalizedQuery = search.trim().toLowerCase()
-  const filteredAppointments = appointments.filter((item) => {
-    if (statusFilter !== "all" && item.status !== statusFilter) {
-      return false
+  React.useEffect(() => {
+    const trimmedInput = searchInput.trim()
+    const trimmedCurrent = initialSearch.trim()
+    if (trimmedInput === trimmedCurrent) {
+      return
     }
 
-    if (normalizedQuery) {
-      const matchesCustomer =
-        item.customerName.toLowerCase().includes(normalizedQuery) ||
-        item.customerEmail.toLowerCase().includes(normalizedQuery)
-      const matchesService = item.serviceName
-        .toLowerCase()
-        .includes(normalizedQuery)
+    const timer = setTimeout(() => {
+      router.replace(
+        buildFilterHref({
+          status: activeStatus,
+          search: trimmedInput,
+          page: 1,
+        }),
+        { scroll: false }
+      )
+    }, 350)
 
-      if (!matchesCustomer && !matchesService) {
-        return false
+    return () => clearTimeout(timer)
+  }, [searchInput, initialSearch, activeStatus, router])
+
+  async function openDetails(appointment: AdminAppointment) {
+    setDetailTarget(appointment)
+    setLoadingDetail(true)
+
+    try {
+      const response = await fetch(
+        `/api/backend/admin/appointments/${encodeURIComponent(appointment.id)}`,
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        }
+      )
+
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean
+        code?: string
+        data?: AdminAppointment
+      } | null
+
+      if (response.status === 403 && payload?.code === "USER_BLOCKED") {
+        setUser(null)
+        router.replace("/sign-in?blocked=1")
+        return
       }
-    }
 
-    return true
-  })
+      if (response.ok && payload?.success && payload.data) {
+        setDetailTarget(payload.data)
+      }
+    } catch {
+      // Keep the list row detail visible if background refresh fails.
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
 
   async function handleConfirm(appointment: AdminAppointment) {
     setConfirmingId(appointment.id)
@@ -132,6 +209,11 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
       const result = await confirmAppointmentAction(appointment.id)
 
       if (!result.success) {
+        if (result.blocked) {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
         toast.add({
           title: "Could not confirm appointment",
           description: result.message,
@@ -168,6 +250,11 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
       const result = await cancelAdminAppointmentAction(cancelTarget.id)
 
       if (!result.success) {
+        if (result.blocked) {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
         toast.add({
           title: "Could not cancel appointment",
           description: result.message,
@@ -194,9 +281,15 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
     }
   }
 
+  const hasFilters = activeStatus !== "all" || Boolean(initialSearch.trim())
+  const paginationParams = {
+    ...(activeStatus !== "all" ? { status: activeStatus } : {}),
+    ...(initialSearch.trim() ? { search: initialSearch.trim() } : {}),
+  }
+
   return (
     <div className="flex flex-col gap-5">
-      {appointments.length > 0 ? (
+      {counts.all > 0 || hasFilters ? (
         <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card p-4 lg:flex-row lg:items-center lg:justify-between">
           <div
             role="group"
@@ -204,24 +297,29 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
             className="flex flex-wrap items-center gap-2"
           >
             {STATUS_FILTERS.map((item) => {
-              const active = statusFilter === item.value
+              const active = activeStatus === item.value
 
               return (
-                <Button
+                <Link
                   key={item.value}
-                  type="button"
-                  size="sm"
-                  variant={active ? "default" : "outline"}
-                  aria-pressed={active}
-                  onClick={() => setStatusFilter(item.value)}
+                  href={buildFilterHref({
+                    status: item.value,
+                    search: searchInput.trim(),
+                    page: 1,
+                  })}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
+                    buttonVariants({
+                      size: "sm",
+                      variant: active ? "default" : "outline",
+                    }),
                     "rounded-full px-4",
                     !active &&
                       "border-border bg-transparent text-foreground hover:bg-blush hover:text-plum"
                   )}
                 >
                   {item.label} ({counts[item.value]})
-                </Button>
+                </Link>
               )
             })}
           </div>
@@ -237,22 +335,36 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
             <Input
               id="admin-appointments-search"
               type="search"
+              maxLength={100}
               placeholder="Search customer or service…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  router.replace(
+                    buildFilterHref({
+                      status: activeStatus,
+                      search: searchInput.trim(),
+                      page: 1,
+                    }),
+                    { scroll: false }
+                  )
+                }
+              }}
               className="h-10 rounded-xl pl-9"
             />
           </div>
         </div>
       ) : null}
 
-      {appointments.length === 0 ? (
+      {counts.all === 0 && !hasFilters ? (
         <EmptyState
           icon={CalendarX}
           title="No appointment requests yet"
           description="Customer appointment requests will appear here as soon as bookings are submitted."
         />
-      ) : filteredAppointments.length === 0 ? (
+      ) : appointments.length === 0 ? (
         <EmptyState
           icon={CalendarX}
           title="No matching appointments"
@@ -262,8 +374,8 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
             type="button"
             variant="outline"
             onClick={() => {
-              setStatusFilter("all")
-              setSearch("")
+              setSearchInput("")
+              router.replace("/admin/appointments", { scroll: false })
             }}
             className="h-10 rounded-full border-border bg-transparent px-5 text-sm hover:bg-blush hover:text-plum"
           >
@@ -271,240 +383,252 @@ function AdminAppointments({ appointments }: AdminAppointmentsProps) {
           </Button>
         </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {filteredAppointments.map((appointment) => {
-            const busy = confirmingId === appointment.id
-            const canConfirm = appointment.status === "pending"
-            const canCancel =
-              appointment.status === "pending" ||
-              appointment.status === "confirmed"
+        <>
+          <ul className="flex flex-col gap-3">
+            {appointments.map((appointment) => {
+              const busy = confirmingId === appointment.id
+              const canConfirm = appointment.status === "pending"
+              const canCancel =
+                appointment.status === "pending" ||
+                appointment.status === "confirmed"
 
-            return (
-              <li
-                key={appointment.id}
-                className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[0_18px_40px_-34px_rgba(58,24,48,0.4)] sm:p-5"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex min-w-0 flex-col gap-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-heading text-2xl leading-tight font-medium text-foreground">
-                        {appointment.serviceName}
-                      </h3>
-                      <span className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                        {appointment.serviceCategory}
-                      </span>
-                    </div>
+              return (
+                <li
+                  key={appointment.id}
+                  className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[0_18px_40px_-34px_rgba(58,24,48,0.4)] sm:p-5"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-heading text-2xl leading-tight font-medium text-foreground">
+                          {appointment.serviceName}
+                        </h3>
+                        <span className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                          {appointment.serviceCategory}
+                        </span>
+                      </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground">
-                      <span className="inline-flex items-center gap-1.5 font-medium">
-                        <UserRound
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        {appointment.customerName}
-                      </span>
-                      {appointment.customerEmail ? (
-                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                          <Mail
-                            className="size-3.5 text-rose"
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground">
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          <UserRound
+                            className="size-4 text-primary"
                             aria-hidden="true"
                           />
-                          {appointment.customerEmail}
+                          {appointment.customerName}
                         </span>
+                        {appointment.customerEmail ? (
+                          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                            <Mail
+                              className="size-3.5 text-rose"
+                              aria-hidden="true"
+                            />
+                            {appointment.customerEmail}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarDays
+                            className="size-4 text-primary"
+                            aria-hidden="true"
+                          />
+                          {formatSalonDate(appointment.appointmentDate)}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock3
+                            className="size-4 text-primary"
+                            aria-hidden="true"
+                          />
+                          {formatTimeSlot(appointment.timeSlot)}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <ReceiptText
+                            className="size-4 text-primary"
+                            aria-hidden="true"
+                          />
+                          Requested{" "}
+                          {formatSalonDateTime(appointment.requestedAt)}
+                        </span>
+                      </div>
+
+                      {appointment.message ? (
+                        <p className="mt-1 inline-flex items-start gap-1.5 rounded-xl bg-blush/40 px-3 py-2 text-xs leading-5 text-foreground">
+                          <MessageSquare
+                            className="mt-0.5 size-3.5 shrink-0 text-primary"
+                            aria-hidden="true"
+                          />
+                          <span className="line-clamp-2">
+                            {appointment.message}
+                          </span>
+                        </p>
                       ) : null}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarDays
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        {formatSalonDate(appointment.appointmentDate)}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock3
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        {formatTimeSlot(appointment.timeSlot)}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <ReceiptText
-                          className="size-4 text-primary"
-                          aria-hidden="true"
-                        />
-                        Requested {formatSalonDateTime(appointment.requestedAt)}
-                      </span>
-                    </div>
-
-                    {appointment.message ? (
-                      <p className="mt-1 inline-flex items-start gap-1.5 rounded-xl bg-blush/40 px-3 py-2 text-xs leading-5 text-foreground">
-                        <MessageSquare
-                          className="mt-0.5 size-3.5 shrink-0 text-primary"
-                          aria-hidden="true"
-                        />
-                        <span className="line-clamp-2">
-                          {appointment.message}
-                        </span>
+                    <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:flex-col sm:items-end">
+                      <p className="font-heading text-2xl font-semibold text-plum">
+                        {formatCurrency(appointment.servicePrice)}
                       </p>
-                    ) : null}
-                  </div>
-
-                  <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:flex-col sm:items-end">
-                    <p className="font-heading text-2xl font-semibold text-plum">
-                      {formatCurrency(appointment.servicePrice)}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={appointment.status} />
-                      <StatusBadge status={appointment.paymentStatus} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge status={appointment.status} />
+                        <StatusBadge status={appointment.paymentStatus} />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3.5">
-                  <Dialog>
-                    <DialogTrigger
-                      render={
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full border-border bg-transparent"
-                        />
-                      }
-                    >
-                      <Eye aria-hidden="true" />
-                      View details
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-lg">
-                      <DialogHeader>
-                        <DialogTitle className="text-lg">
-                          {appointment.serviceName}
-                        </DialogTitle>
-                        <DialogDescription>
-                          Appointment request reference {appointment.id.slice(-6)}
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <DetailRow
-                          label="Customer"
-                          value={appointment.customerName}
-                        />
-                        <DetailRow
-                          label="Email"
-                          value={appointment.customerEmail || "—"}
-                        />
-                        <DetailRow
-                          label="Phone"
-                          value={
-                            appointment.customerPhone ? (
-                              <span className="inline-flex items-center gap-1.5">
-                                <Phone className="size-3.5" aria-hidden="true" />
-                                {appointment.customerPhone}
-                              </span>
-                            ) : (
-                              "Not provided"
-                            )
-                          }
-                        />
-                        <DetailRow
-                          label="Service category"
-                          value={appointment.serviceCategory}
-                        />
-                        <DetailRow
-                          label="Appointment date"
-                          value={formatSalonDate(appointment.appointmentDate)}
-                        />
-                        <DetailRow
-                          label="Appointment time"
-                          value={formatTimeSlot(appointment.timeSlot)}
-                        />
-                        <DetailRow
-                          label="Service price"
-                          value={formatCurrency(appointment.servicePrice)}
-                        />
-                        <DetailRow
-                          label="Booking requested"
-                          value={formatSalonDateTime(appointment.requestedAt)}
-                        />
-                        <DetailRow
-                          label="Appointment status"
-                          value={<StatusBadge status={appointment.status} />}
-                        />
-                        <DetailRow
-                          label="Payment status"
-                          value={
-                            <StatusBadge status={appointment.paymentStatus} />
-                          }
-                        />
-                      </dl>
-
-                      <div className="flex flex-col gap-1.5 rounded-xl bg-blush/50 p-3">
-                        <p className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                          <MessageSquare
-                            className="size-3.5"
-                            aria-hidden="true"
-                          />
-                          Customer message
-                        </p>
-                        <p className="text-sm leading-6 text-foreground">
-                          {appointment.message || "No message provided."}
-                        </p>
-                      </div>
-
-                      <DialogFooter>
-                        <DialogClose render={<Button variant="outline" />}>
-                          Close
-                        </DialogClose>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-
-                  {canConfirm ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="rounded-full px-4"
-                      onClick={() => handleConfirm(appointment)}
-                      disabled={busy}
-                    >
-                      {busy ? (
-                        <>
-                          <Loader2Icon
-                            className="animate-spin"
-                            aria-hidden="true"
-                          />
-                          Confirming…
-                        </>
-                      ) : (
-                        <>
-                          <CircleCheck aria-hidden="true" />
-                          Confirm
-                        </>
-                      )}
-                    </Button>
-                  ) : null}
-
-                  {canCancel ? (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3.5">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="rounded-full border-destructive/30 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setCancelTarget(appointment)}
-                      disabled={busy}
+                      className="rounded-full border-border bg-transparent"
+                      onClick={() => openDetails(appointment)}
                     >
-                      <XCircle aria-hidden="true" />
-                      Cancel appointment
+                      <Eye aria-hidden="true" />
+                      View details
                     </Button>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+
+                    {canConfirm ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-full px-4"
+                        onClick={() => handleConfirm(appointment)}
+                        disabled={busy}
+                      >
+                        {busy ? (
+                          <>
+                            <Loader2Icon
+                              className="animate-spin"
+                              aria-hidden="true"
+                            />
+                            Confirming…
+                          </>
+                        ) : (
+                          <>
+                            <CircleCheck aria-hidden="true" />
+                            Confirm
+                          </>
+                        )}
+                      </Button>
+                    ) : null}
+
+                    {canCancel ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full border-destructive/30 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setCancelTarget(appointment)}
+                        disabled={busy}
+                      >
+                        <XCircle aria-hidden="true" />
+                        Cancel appointment
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+
+          <DashboardPagination
+            meta={meta}
+            basePath="/admin/appointments"
+            params={paginationParams}
+          />
+        </>
       )}
+
+      <Dialog
+        open={Boolean(detailTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailTarget(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-lg">
+              {detailTarget?.serviceName}
+            </DialogTitle>
+            <DialogDescription>
+              Appointment request reference {detailTarget?.id.slice(-6)}
+              {loadingDetail ? " · refreshing…" : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailTarget ? (
+            <>
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <DetailRow label="Customer" value={detailTarget.customerName} />
+                <DetailRow
+                  label="Email"
+                  value={detailTarget.customerEmail || "—"}
+                />
+                <DetailRow
+                  label="Phone"
+                  value={
+                    detailTarget.customerPhone ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Phone className="size-3.5" aria-hidden="true" />
+                        {detailTarget.customerPhone}
+                      </span>
+                    ) : (
+                      "Not provided"
+                    )
+                  }
+                />
+                <DetailRow
+                  label="Service category"
+                  value={detailTarget.serviceCategory}
+                />
+                <DetailRow
+                  label="Appointment date"
+                  value={formatSalonDate(detailTarget.appointmentDate)}
+                />
+                <DetailRow
+                  label="Appointment time"
+                  value={formatTimeSlot(detailTarget.timeSlot)}
+                />
+                <DetailRow
+                  label="Service price"
+                  value={formatCurrency(detailTarget.servicePrice)}
+                />
+                <DetailRow
+                  label="Booking requested"
+                  value={formatSalonDateTime(detailTarget.requestedAt)}
+                />
+                <DetailRow
+                  label="Appointment status"
+                  value={<StatusBadge status={detailTarget.status} />}
+                />
+                <DetailRow
+                  label="Payment status"
+                  value={<StatusBadge status={detailTarget.paymentStatus} />}
+                />
+              </dl>
+
+              <div className="flex flex-col gap-1.5 rounded-xl bg-blush/50 p-3">
+                <p className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                  <MessageSquare className="size-3.5" aria-hidden="true" />
+                  Customer message
+                </p>
+                <p className="text-sm leading-6 text-foreground">
+                  {detailTarget.message || "No message provided."}
+                </p>
+              </div>
+            </>
+          ) : null}
+
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Close
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={Boolean(cancelTarget)}

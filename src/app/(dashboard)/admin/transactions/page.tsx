@@ -3,8 +3,9 @@ import { TriangleAlert } from "lucide-react"
 
 import { AdminTransactions } from "@/components/dashboard/AdminTransactions"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { getAllTransactions, type AdminTransaction } from "@/lib/admin"
+import type { AdminTransaction } from "@/lib/dashboard-types"
 import { requireRole } from "@/lib/session"
+import { getAllTransactions } from "@/lib/transactions-legacy"
 
 export const metadata: Metadata = {
   title: "Transactions",

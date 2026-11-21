@@ -15,8 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { AdminTransaction } from "@/lib/admin"
-import type { TransactionStatus } from "@/lib/appointments"
+import type { AdminTransaction, TransactionStatus } from "@/lib/dashboard-types"
 import {
   formatCurrency,
   formatSalonDate,

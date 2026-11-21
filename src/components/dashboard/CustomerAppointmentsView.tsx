@@ -1,13 +1,13 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
 import { CalendarDays, CalendarX, ReceiptText } from "lucide-react"
 
 import { AppointmentCard } from "@/components/dashboard/AppointmentCard"
+import { DashboardPagination } from "@/components/dashboard/DashboardPagination"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { StatusBadge } from "@/components/shared/StatusBadge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type {
+  AdminAppointmentCounts,
   AppointmentStatus,
   CustomerAppointment,
   CustomerTransaction,
-} from "@/lib/appointments"
+  PaginationMeta,
+} from "@/lib/dashboard-types"
 import {
   formatCurrency,
   formatSalonDate,
@@ -46,29 +48,27 @@ function shortReference(sessionId: string) {
   return `…${sessionId.slice(-10)}`
 }
 
+function buildFilterHref(status: StatusFilter): string {
+  return status === "all"
+    ? "/customer/appointments"
+    : `/customer/appointments?status=${status}`
+}
+
 type CustomerAppointmentsViewProps = {
   appointments: CustomerAppointment[]
+  meta: PaginationMeta
+  counts: AdminAppointmentCounts
+  activeFilter: StatusFilter
   transactions: CustomerTransaction[]
 }
 
 function CustomerAppointmentsView({
   appointments,
+  meta,
+  counts,
+  activeFilter,
   transactions,
 }: CustomerAppointmentsViewProps) {
-  const [filter, setFilter] = React.useState<StatusFilter>("all")
-
-  const counts: Record<StatusFilter, number> = {
-    all: appointments.length,
-    pending: appointments.filter((item) => item.status === "pending").length,
-    confirmed: appointments.filter((item) => item.status === "confirmed").length,
-    cancelled: appointments.filter((item) => item.status === "cancelled").length,
-  }
-
-  const filteredAppointments =
-    filter === "all"
-      ? appointments
-      : appointments.filter((item) => item.status === filter)
-
   return (
     <Tabs defaultValue="appointments" className="gap-6">
       <TabsList className="h-auto rounded-full border border-border/70 bg-card p-1">
@@ -77,7 +77,7 @@ function CustomerAppointmentsView({
           className="rounded-full px-4 py-1.5 text-sm data-active:bg-blush data-active:text-plum data-active:shadow-none"
         >
           <CalendarDays className="size-4" aria-hidden="true" />
-          Appointments ({appointments.length})
+          Appointments ({counts.all})
         </TabsTrigger>
         <TabsTrigger
           value="payments"
@@ -89,7 +89,7 @@ function CustomerAppointmentsView({
       </TabsList>
 
       <TabsContent value="appointments" className="flex flex-col gap-5">
-        {appointments.length === 0 ? (
+        {counts.all === 0 ? (
           <EmptyState
             icon={CalendarX}
             title="No appointment requests yet"
@@ -113,51 +113,64 @@ function CustomerAppointmentsView({
               className="flex flex-wrap items-center gap-2"
             >
               {STATUS_FILTERS.map((item) => {
-                const active = filter === item.value
+                const active = activeFilter === item.value
 
                 return (
-                  <Button
+                  <Link
                     key={item.value}
-                    type="button"
-                    size="sm"
-                    variant={active ? "default" : "outline"}
-                    aria-pressed={active}
-                    onClick={() => setFilter(item.value)}
+                    href={buildFilterHref(item.value)}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
+                      buttonVariants({
+                        size: "sm",
+                        variant: active ? "default" : "outline",
+                      }),
                       "rounded-full px-4",
                       !active &&
                         "border-border bg-card text-foreground hover:bg-blush hover:text-plum"
                     )}
                   >
                     {item.label} ({counts[item.value]})
-                  </Button>
+                  </Link>
                 )
               })}
             </div>
 
-            {filteredAppointments.length === 0 ? (
+            {appointments.length === 0 ? (
               <EmptyState
                 icon={CalendarX}
-                title={`No ${filter} appointments`}
-                description="No appointment requests match this status right now."
+                title={
+                  activeFilter === "all"
+                    ? "No appointments on this page"
+                    : `No ${activeFilter} appointments`
+                }
+                description="No appointment requests match this filter right now."
               >
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setFilter("all")}
-                  className="h-10 rounded-full border-border bg-transparent px-5 text-sm hover:bg-blush hover:text-plum"
+                <Link
+                  href="/customer/appointments"
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "h-10 rounded-full border-border bg-transparent px-5 text-sm hover:bg-blush hover:text-plum"
+                  )}
                 >
                   Show all appointments
-                </Button>
+                </Link>
               </EmptyState>
             ) : (
               <div className="flex flex-col gap-4">
-                {filteredAppointments.map((appointment) => (
+                {appointments.map((appointment) => (
                   <AppointmentCard
                     key={appointment.id}
                     appointment={appointment}
                   />
                 ))}
+                <DashboardPagination
+                  meta={meta}
+                  basePath="/customer/appointments"
+                  params={
+                    activeFilter === "all" ? {} : { status: activeFilter }
+                  }
+                />
               </div>
             )}
           </>

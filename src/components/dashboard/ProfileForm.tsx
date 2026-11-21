@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { CircleAlertIcon, Loader2Icon } from "lucide-react"
+import { CircleAlertIcon, Loader2Icon, Upload } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,11 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/toast"
-import { updateMyProfile, useAuthSession } from "@/lib/auth-client"
+import {
+  updateMyProfile,
+  uploadMyProfileImage,
+  useAuthSession,
+} from "@/lib/auth-client"
 
 type ProfileFormProps = {
   name: string
@@ -34,6 +38,13 @@ type FormValues = {
 type FormErrors = Partial<Record<keyof FormValues | "form", string>>
 
 const PHONE_PATTERN = /^[+]?[0-9][0-9\s()-]{5,19}$/
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+])
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 function isHttpUrl(value: string) {
   try {
@@ -47,13 +58,17 @@ function isHttpUrl(value: string) {
 function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
   const router = useRouter()
   const { setUser } = useAuthSession()
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [values, setValues] = React.useState<FormValues>({
     name,
     phone,
     image,
   })
   const [errors, setErrors] = React.useState<FormErrors>({})
+  const [uploadingImage, setUploadingImage] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+
+  const busy = uploadingImage || saving
 
   const previewImage = isHttpUrl(values.image.trim())
     ? values.image.trim()
@@ -105,6 +120,87 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
     return nextErrors
   }
 
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ""
+
+    if (!file) {
+      return
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      const message = "Upload a JPEG, PNG, WebP, or GIF image."
+      setErrors((current) => ({ ...current, image: message }))
+      toast.add({
+        title: "Invalid image file",
+        description: message,
+        type: "error",
+      })
+      return
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      const message = "Image size must be 5 MB or smaller."
+      setErrors((current) => ({ ...current, image: message }))
+      toast.add({
+        title: "Image too large",
+        description: message,
+        type: "error",
+      })
+      return
+    }
+
+    setUploadingImage(true)
+    setErrors((current) => {
+      const next = { ...current }
+      delete next.image
+      delete next.form
+      return next
+    })
+
+    try {
+      const result = await uploadMyProfileImage(file)
+
+      if (!result.ok) {
+        if (result.code === "USER_BLOCKED") {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
+        if (result.status === 401) {
+          setUser(null)
+          router.replace("/sign-in")
+          return
+        }
+
+        setErrors((current) => ({
+          ...current,
+          image: result.message,
+          form: result.message,
+        }))
+        toast.add({
+          title: "Photo upload failed",
+          description: result.message,
+          type: "error",
+        })
+        return
+      }
+
+      setValues((current) => ({ ...current, image: result.url }))
+      if (result.user) {
+        setUser(result.user)
+      }
+      toast.add({
+        title: "Profile photo updated",
+        description: "Your new profile image is saved to your account.",
+        type: "success",
+      })
+      router.refresh()
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -125,6 +221,17 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
       })
 
       if (!result.ok) {
+        if (result.code === "USER_BLOCKED") {
+          setUser(null)
+          router.replace("/sign-in?blocked=1")
+          return
+        }
+        if (result.status === 401) {
+          setUser(null)
+          router.replace("/sign-in")
+          return
+        }
+
         setErrors({
           ...(result.fieldErrors ?? {}),
           form: result.message,
@@ -151,19 +258,51 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <Avatar size="lg" className="size-16">
+      <input
+        ref={fileInputRef}
+        id="profile-image-file"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={handleFileUpload}
+        className="sr-only"
+        disabled={busy}
+      />
+
+      <div className="flex flex-wrap items-center gap-4">
+        <Avatar size="lg" className="size-16 shrink-0">
           {previewImage ? <AvatarImage src={previewImage} alt="" /> : null}
           <AvatarFallback className="bg-blush text-lg text-plum">
             {initials}
           </AvatarFallback>
         </Avatar>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <p className="text-sm font-medium text-foreground">Profile picture</p>
           <p className="text-xs leading-5 text-muted-foreground">
-            Paste a photo URL. Image upload is available from here once file
-            storage is connected.
+            Upload a JPEG, PNG, WebP, or GIF image (up to 5 MB), or paste a
+            photo URL below.
           </p>
+          <div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              className="rounded-full border-border bg-card hover:bg-blush hover:text-plum"
+            >
+              {uploadingImage ? (
+                <>
+                  <Loader2Icon className="animate-spin" aria-hidden="true" />
+                  Uploading photo…
+                </>
+              ) : (
+                <>
+                  <Upload aria-hidden="true" />
+                  Upload photo
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -180,7 +319,7 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
             aria-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? "profile-name-error" : undefined}
             className="h-11 rounded-xl px-3.5"
-            disabled={saving}
+            disabled={busy}
             required
           />
           <FieldError id="profile-name-error">{errors.name}</FieldError>
@@ -202,7 +341,7 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
               errors.phone ? "profile-phone-error" : "profile-phone-description"
             }
             className="h-11 rounded-xl px-3.5"
-            disabled={saving}
+            disabled={busy}
           />
           <FieldDescription id="profile-phone-description">
             Optional. Used only so the salon can reach you about a booking.
@@ -224,10 +363,11 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
             aria-invalid={Boolean(errors.image)}
             aria-describedby="profile-image-description"
             className="h-11 rounded-xl px-3.5"
-            disabled={saving}
+            disabled={busy}
           />
           <FieldDescription id="profile-image-description">
-            Leave empty to remove your photo and show your initials instead.
+            Filled automatically after upload, or leave empty to clear your
+            photo and show your initials.
           </FieldDescription>
           <FieldError id="profile-image-error">{errors.image}</FieldError>
         </Field>
@@ -280,7 +420,7 @@ function ProfileForm({ name, email, phone, image, role }: ProfileFormProps) {
         <Button
           type="submit"
           className="h-11 w-full rounded-full text-sm sm:w-auto sm:px-6"
-          disabled={saving}
+          disabled={busy}
         >
           {saving ? (
             <>
